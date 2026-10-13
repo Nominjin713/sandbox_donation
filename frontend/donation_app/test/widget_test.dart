@@ -2,14 +2,26 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:donation_app/main.dart';
+import 'package:donation_app/app.dart';
 import 'package:donation_app/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  testWidgets('Home opens registration and back returns home', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    expect(find.text('Сайн үйлсэд хамтдаа'), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Бүртгүүлэх'));
+    await tester.pumpAndSettle();
+    expect(find.text('Нууц үг давтах'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Сайн үйлсэд хамтдаа'), findsOneWidget);
+  });
   testWidgets('Login validation and registration switch', (tester) async {
     await tester.pumpWidget(const MyApp());
+    await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
     await tester.pump();
     expect(find.text('Зөв имэйл оруулна уу.'), findsOneWidget);
@@ -39,6 +51,8 @@ void main() {
     );
     addTearDown(service.close);
     await tester.pumpWidget(MyApp(authService: service));
+    await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'bold@example.com',
@@ -74,6 +88,8 @@ void main() {
       );
       addTearDown(service.close);
       await tester.pumpWidget(MyApp(authService: service));
+      await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Бүртгэлгүй юу? Бүртгүүлэх'));
       await tester.pumpAndSettle();
       final fields = find.byType(TextFormField);
@@ -109,6 +125,8 @@ void main() {
     );
     addTearDown(service.close);
     await tester.pumpWidget(MyApp(authService: service));
+    await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'bold@example.com',
