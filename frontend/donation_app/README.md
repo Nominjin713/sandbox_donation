@@ -1,5 +1,29 @@
 # donation_app
 
+Монгол хэлтэй бүртгүүлэх, нэвтрэх Flutter дэлгэцүүд. Django API-тай холбогдоно.
+
+Backend-ийг төслийн үндсэн хавтсаас ажиллуулах:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8080
+```
+
+Frontend-ийг өөр терминалаас ажиллуулах:
+
+```powershell
+cd frontend/donation_app
+flutter pub get
+flutter run -d chrome --web-port=3000
+```
+
+Android emulator нь `http://10.0.2.2:8080`, web болон desktop нь `http://localhost:8080` хаягийг ашиглана. Өөр backend хаяг ашиглах бол `--dart-define=API_URL=https://your-api.example.com` тохируулна. Утаснаас холбох бол компьютерийн LAN хаягийг ашиглаж, backend-ийн allowed hosts тохиргоонд нэмнэ.
+
+Нэвтэрсэн session нь санах ойд хадгалагдах тул аппыг дахин эхлүүлэхэд нэвтэрнэ. Бүртгүүлсний дараа шууд нэвтэрнэ.
+
+Шалгах командууд: `flutter analyze`, `flutter test`.
+
 A new Flutter project.
 
 ## Getting Started
