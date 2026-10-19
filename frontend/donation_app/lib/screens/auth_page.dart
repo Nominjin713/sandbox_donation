@@ -17,13 +17,16 @@ class _AuthPageState extends State<AuthPage> {
       _email = TextEditingController(),
       _password = TextEditingController(),
       _confirm = TextEditingController();
+  final _code = TextEditingController();
+  bool _verifying = false;
+  String? _notice;
   late bool _register = widget.register;
   bool _busy = false, _hide = true;
   String? _error;
 
   @override
   void dispose() {
-    for (final c in [_name, _email, _password, _confirm]) {
+    for (final c in [_name, _email, _password, _confirm, _code]) {
       c.dispose();
     }
     if (widget.authService == null) _authService.close();
@@ -39,7 +42,9 @@ class _AuthPageState extends State<AuthPage> {
       _error = null;
     });
     try {
-      final session = _register
+      final session = _verifying
+          ? await _authService.verifyEmail(email: _email.text, code: _code.text)
+          : _register
           ? await _authService.register(
               name: _name.text,
               email: _email.text,
@@ -54,8 +59,35 @@ class _AuthPageState extends State<AuthPage> {
       return;
     } on AuthException catch (error) {
       if (mounted) {
-        setState(() => _error = error.message);
+        setState(() {
+          if (error.verificationRequired) {
+            _verifying = true;
+            _notice = error.message;
+            _error = null;
+          } else {
+            _error = error.message;
+          }
+        });
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _authService.resendVerification(
+        email: _email.text,
+        password: _password.text,
+      );
+      if (mounted)
+        setState(() => _notice = 'Шинэ код илгээлээ. Имэйлээ шалгана уу.');
+    } on AuthException catch (error) {
+      if (mounted) setState(() => _error = error.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -87,19 +119,45 @@ class _AuthPageState extends State<AuthPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          (_register ? 'Бүртгүүлэх' : 'Нэвтрэх'),
+                          (_verifying
+                              ? 'Имэйл баталгаажуулах'
+                              : _register
+                              ? 'Бүртгүүлэх'
+                              : 'Нэвтрэх'),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          (_register
+                          (_verifying
+                              ? '${_email.text.trim()} хаягт ирсэн кодыг оруулна уу.'
+                              : _register
                               ? 'Бүртгэл үүсгээд бидэнтэй нэгдээрэй.'
                               : 'Бүртгэлээрээ нэвтрэн үргэлжлүүлээрэй.'),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 28),
-                        ...[
+                        if (_verifying) ...[
+                          TextFormField(
+                            controller: _code,
+                            enabled: !_busy,
+                            keyboardType: TextInputType.number,
+                            maxLength: 6,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            decoration: const InputDecoration(
+                              labelText: 'Баталгаажуулах код',
+                            ),
+                            validator: (v) =>
+                                RegExp(r'^[0-9]{6}$').hasMatch(v ?? '')
+                                ? null
+                                : '6 оронтой код оруулна уу.',
+                            onFieldSubmitted: (_) => _submit(),
+                          ),
+                          TextButton(
+                            onPressed: _busy ? null : _resend,
+                            child: const Text('Код дахин авах'),
+                          ),
+                        ] else ...[
                           if (_register) ...[
                             TextFormField(
                               controller: _name,
@@ -199,6 +257,8 @@ class _AuthPageState extends State<AuthPage> {
                             ),
                           ],
                         ],
+                        if (_notice != null)
+                          Text(_notice!, textAlign: TextAlign.center),
                         if (_error != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 16),
@@ -222,7 +282,13 @@ class _AuthPageState extends State<AuthPage> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text((_register ? 'Бүртгүүлэх' : 'Нэвтрэх')),
+                                : Text(
+                                    (_verifying
+                                        ? 'Баталгаажуулах'
+                                        : _register
+                                        ? 'Бүртгүүлэх'
+                                        : 'Нэвтрэх'),
+                                  ),
                           ),
                         ),
                         TextButton(
@@ -231,7 +297,10 @@ class _AuthPageState extends State<AuthPage> {
                               : () {
                                   _form.currentState?.reset();
                                   setState(() {
-                                    _register = !_register;
+                                    _register = _verifying ? false : !_register;
+                                    _verifying = false;
+                                    _notice = null;
+                                    _code.clear();
                                     _hide = true;
                                     _error = null;
                                     _password.clear();
@@ -239,7 +308,9 @@ class _AuthPageState extends State<AuthPage> {
                                   });
                                 },
                           child: Text(
-                            _register
+                            _verifying
+                                ? 'Нэвтрэх хэсэгт буцах'
+                                : _register
                                 ? 'Бүртгэлтэй юу? Нэвтрэх'
                                 : 'Бүртгэлгүй юу? Бүртгүүлэх',
                           ),

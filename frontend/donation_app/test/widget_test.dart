@@ -76,6 +76,15 @@ void main() {
       final service = AuthService(
         client: MockClient((request) async {
           requests.add(request);
+          if (request.url.path == '/auth/register') {
+            return http.Response(
+              jsonEncode({'verification_required': true}),
+              201,
+            );
+          }
+          if (request.url.path == '/auth/resend-verification') {
+            return http.Response('{}', 200);
+          }
           return http.Response(
             jsonEncode({
               'token': 'test-token',
@@ -109,6 +118,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(requests.single.url.path, '/auth/register');
       expect(jsonDecode(requests.single.body)['name'], 'Болд');
+      expect(find.text('Имэйл баталгаажуулах'), findsOneWidget);
+      expect(find.text('Тавтай морил!'), findsNothing);
+      await tester.tap(find.text('Код дахин авах'));
+      await tester.pumpAndSettle();
+      expect(requests.last.url.path, '/auth/resend-verification');
+      expect(jsonDecode(requests.last.body)['password'], 'Strong!Pass483');
+      expect(
+        find.text('Шинэ код илгээлээ. Имэйлээ шалгана уу.'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextFormField), '123456');
+      final verify = find.widgetWithText(FilledButton, 'Баталгаажуулах');
+      await tester.ensureVisible(verify);
+      await tester.tap(verify);
+      await tester.pumpAndSettle();
+      expect(requests.last.url.path, '/auth/verify-email');
+      expect(jsonDecode(requests.last.body)['code'], '123456');
       expect(find.text('Тавтай морил!'), findsOneWidget);
     },
   );
@@ -137,4 +163,49 @@ void main() {
     expect(find.text('Имэйл эсвэл нууц үг буруу байна.'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Нэвтрэх'), findsOneWidget);
   });
+
+  testWidgets(
+    'Unverified login opens code form and displays invalid code errors',
+    (tester) async {
+      final service = AuthService(
+        client: MockClient((request) async {
+          return http.Response(
+            jsonEncode(
+              request.url.path == '/auth/login'
+                  ? {
+                      'verification_required': true,
+                      'message': 'Имэйлээ баталгаажуулна уу.',
+                    }
+                  : {'message': 'Код буруу эсвэл хугацаа дууссан байна.'},
+            ),
+            request.url.path == '/auth/login' ? 403 : 400,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      addTearDown(service.close);
+      await tester.pumpWidget(MyApp(authService: service));
+      await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'bold@example.com',
+      );
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'Strong!Pass483',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Нэвтрэх'));
+      await tester.pumpAndSettle();
+      expect(find.text('Имэйл баталгаажуулах'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField), '000000');
+      await tester.tap(find.widgetWithText(FilledButton, 'Баталгаажуулах'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Код буруу эсвэл хугацаа дууссан байна.'),
+        findsOneWidget,
+      );
+      expect(find.text('Тавтай морил!'), findsNothing);
+    },
+  );
 }

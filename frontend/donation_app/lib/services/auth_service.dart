@@ -5,8 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AuthException implements Exception {
-  const AuthException(this.message);
+  const AuthException(this.message, {this.verificationRequired = false});
   final String message;
+  final bool verificationRequired;
 }
 
 class AuthSession {
@@ -51,6 +52,37 @@ class AuthService {
     'password': password,
   });
 
+  Future<AuthSession> verifyEmail({
+    required String email,
+    required String code,
+  }) => _authenticate('verify-email', {
+    'email': email.trim(),
+    'code': code.trim(),
+  });
+
+  Future<void> resendVerification({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _post(
+      '/auth/resend-verification',
+      body: {'email': email.trim(), 'password': password},
+    );
+    try {
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      if (response.statusCode != 200) {
+        throw AuthException(
+          data['message'] as String? ?? 'Код илгээж чадсангүй.',
+        );
+      }
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      throw const AuthException('Серверийн хариуг уншиж чадсангүй.');
+    }
+  }
+
   Future<AuthSession> _authenticate(
     String action,
     Map<String, String> body,
@@ -59,6 +91,12 @@ class AuthService {
     try {
       final data =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      if (data['verification_required'] == true) {
+        throw AuthException(
+          data['message'] as String? ?? 'Имэйлээ баталгаажуулна уу.',
+          verificationRequired: true,
+        );
+      }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw AuthException(
           data['message'] as String? ?? 'Алдаа гарлаа. Дахин оролдоно уу.',
