@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'auth_page.dart';
 import 'event_list_page.dart';
 import 'create_event_page.dart';
+import '../services/auth_service.dart';
 
 const Color primaryBlue = Color(0xFF4389F5);
 const Color darkBlue = Color(0xFF19345C);
@@ -10,8 +11,45 @@ const Color lightBlue = Color(0xFFEAF3FF);
 const Color backgroundBlue = Color(0xFFF7FAFF);
 const Color softBorder = Color(0xFFE5EEFC);
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, this.authService});
+  final AuthService? authService;
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final AuthService _authService = widget.authService ?? AuthService();
+  AuthSession? _session;
+  bool _loggingOut = false;
+
+  @override
+  void dispose() {
+    if (widget.authService == null) _authService.close();
+    super.dispose();
+  }
+
+  Future<void> _openAuth({bool register = false}) async {
+    final session = await Navigator.of(context).push<AuthSession>(MaterialPageRoute(
+      builder: (_) => AuthPage(authService: _authService, register: register),
+    ));
+    if (mounted && session != null) setState(() => _session = session);
+  }
+
+  Future<void> _logout() async {
+    if (_loggingOut || _session == null) return;
+    setState(() => _loggingOut = true);
+    try {
+      await _authService.logout(_session!.token);
+      if (mounted) setState(() => _session = null);
+    } on AuthException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _loggingOut = false);
+    }
+  }
 
   final List<Map<String, dynamic>> events = const [
     {
@@ -82,15 +120,12 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (_session != null) ...[
+                      Flexible(child: Text('Тавтай морил! ${_session!.name}', overflow: TextOverflow.ellipsis)),
+                      TextButton(onPressed: _loggingOut ? null : _logout, child: const Text('Гарах')),
+                    ] else ...[
                     TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AuthPage(),
-                          ),
-                        );
-                      },
+                      onPressed: () => _openAuth(),
                       child: const Text('Нэвтрэх'),
                     ),
                     const SizedBox(width: 4),
@@ -106,16 +141,10 @@ class HomePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AuthPage(),
-                          ),
-                        );
-                      },
+                      onPressed: () => _openAuth(register: true),
                       child: const Text('Бүртгүүлэх'),
                     ),
+                    ],
                   ],
                 ),
               ),
@@ -150,7 +179,7 @@ class HomePage extends StatelessWidget {
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: const Text(
@@ -216,7 +245,7 @@ class HomePage extends StatelessWidget {
                           width: 145,
                           height: 105,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.65),
+                            color: Colors.white.withValues(alpha: 0.65),
                             borderRadius: BorderRadius.circular(28),
                           ),
                           child: const Icon(
@@ -459,7 +488,7 @@ class HomePage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryBlue.withOpacity(0.2),
+                        color: primaryBlue.withValues(alpha: 0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -556,7 +585,7 @@ class _StatCard extends StatelessWidget {
         border: Border.all(color: softBorder),
         boxShadow: [
           BoxShadow(
-            color: darkBlue.withOpacity(0.035),
+            color: darkBlue.withValues(alpha: 0.035),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
@@ -623,7 +652,7 @@ class _CategoryCard extends StatelessWidget {
         border: Border.all(color: softBorder),
         boxShadow: [
           BoxShadow(
-            color: darkBlue.withOpacity(0.035),
+            color: darkBlue.withValues(alpha: 0.035),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -674,7 +703,7 @@ class _EventCard extends StatelessWidget {
         border: Border.all(color: softBorder),
         boxShadow: [
           BoxShadow(
-            color: darkBlue.withOpacity(0.04),
+            color: darkBlue.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),

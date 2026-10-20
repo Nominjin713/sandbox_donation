@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 
 def origin_allowed(origin):
-    if origin == settings.CORS_ORIGIN:
+    if origin == settings.CORS_ORIGIN or origin in settings.CORS_ALLOWED_ORIGINS:
         return True
     if not settings.DEBUG or not origin:
         return False

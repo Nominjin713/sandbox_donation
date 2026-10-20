@@ -7,13 +7,16 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() == 'true'
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'local-development-only-change-before-deployment')
 if not DEBUG and SECRET_KEY == 'local-development-only-change-before-deployment':
     raise RuntimeError('Set DJANGO_SECRET_KEY for deployment.')
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2,testserver').split(',')
+default_hosts = os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost,127.0.0.1,10.0.2.2,testserver')
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', default_hosts).split(',') if host.strip()]
 CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'http://localhost:3000')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', CORS_ORIGIN).split(',') if origin.strip()]
 INSTALLED_APPS = ['django.contrib.auth', 'django.contrib.contenttypes', 'accounts','events']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'accounts.middleware.CorsMiddleware', 'django.middleware.common.CommonMiddleware']
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
+from .database import database_settings
+DATABASES = {'default': database_settings(BASE_DIR)}
 AUTH_USER_MODEL = 'accounts.User'
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
