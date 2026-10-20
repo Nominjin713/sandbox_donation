@@ -51,4 +51,7 @@ if EMAIL_HOST == 'smtp.gmail.com':
 EMAIL_USE_TLS = str(email_setting('EMAIL_USE_TLS', 'true')).lower() == 'true'
 EMAIL_TIMEOUT = 10
 RESEND_API_KEY = email_setting('RESEND_API_KEY')
+GMAIL_CLIENT_ID = email_setting('GMAIL_CLIENT_ID')
+GMAIL_CLIENT_SECRET = email_setting('GMAIL_CLIENT_SECRET')
+GMAIL_REFRESH_TOKEN = email_setting('GMAIL_REFRESH_TOKEN')
 DEFAULT_FROM_EMAIL = email_setting('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@example.com')

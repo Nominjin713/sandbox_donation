@@ -63,6 +63,13 @@ Render дээр `DATABASE_ENGINE=sqlite`, локал `DB_*`, хуучин Supaba
 
 ## 4. Имэйл
 
+**Домайнгүй бол сонгосон хувилбар:** [GMAIL.md](GMAIL.md)-ийн дагуу Gmail API
+OAuth тохируулна. `accounts.gmail_backend.GmailApiEmailBackend` нь HTTPS ашиглана;
+Gmail App Password, SMTP порт болон domain шаардлагагүй. Google Cloud-ийн
+илгээгчийн зөвшөөрөл, token болон Render Environment тохиргоог бүрэн дуусгана.
+
+Resend эсвэл SMTP сонгох бол доорх хувилбаруудыг ашиглана.
+
 **Free Web Service дээр одоогийн Gmail SMTP ажиллахгүй:** Render нь SMTP-ийн
 25/465/587 портуудыг хаадаг. Үнэгүй service сонговол HTTPS имэйл API-ийн backend
 болон provider-ийн түлхүүр/баталгаажсан sender-ийг тусад нь тохируулах шаардлагатай.

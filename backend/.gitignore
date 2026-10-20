@@ -9,3 +9,8 @@ database.local.json.tmp
 database.supabase.local.json
 backups/
 deploy.env
+gmail.render.env
+gmail.render.env.tmp
+gmail-client.local.json
+*.local.json
+client_secret_*.json

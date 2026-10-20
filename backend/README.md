@@ -8,7 +8,11 @@ Render дээр байрлуулах одоогийн дараалал: [RENDER.
 
 Flutter-ийн нийтлэх, жагсаалт, дэлгэрэнгүй, оролцох/цуцлах урсгал API-тай холбогдсон. Backend-ийн migration-уудыг `manage.py migrate` командаар хэрэгжүүлээд серверээ асаана. Frontend-ийг `flutter run -d chrome --web-port=3000` командаар ажиллуулна; өөр backend хаягт `--dart-define=API_URL=https://YOUR_BACKEND_HOST` ашиглана.
 
-Online backend deployment instructions are in [DEPLOY.md](DEPLOY.md). The database can use the existing Supabase PostgreSQL connection through private `database.local.json` settings or hosting `DB_*` environment variables. People cloning the repo do not receive private database/email settings. After hosting the backend, run Flutter with `--dart-define=API_URL=https://YOUR_BACKEND_HOST` to use the shared API.
+Current online deployment instructions are in [RENDER.md](RENDER.md). Render uses
+`DATABASE_URL`; local development uses private `database.local.json` or `DB_*`
+variables. People cloning the repo do not receive private database/email settings.
+Flutter defaults to the shared Render API. Domain-free Gmail delivery setup:
+[GMAIL.md](GMAIL.md).
 
 Requires Python 3.12+ and Django. Registration requires email verification before login.
 

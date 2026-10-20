@@ -5,5 +5,8 @@
 **/*.sqlite3
 **/.env*
 deploy.env
+gmail.render.env
+gmail.render.env.tmp
+client_secret_*.json
 backups
 .git

@@ -1,0 +1,2 @@
+# Local OAuth setup helper only; the deployed backend uses the Python standard library.
+google-auth-oauthlib>=1.2,<2
