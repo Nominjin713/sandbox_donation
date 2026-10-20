@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 import 'screens/home_page.dart';
 
 void main() {
@@ -16,9 +16,7 @@ class VolunteerApp extends StatelessWidget {
       title: 'Volunteer Hub',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF087765),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087765)),
       ),
       home: const HomePage(),
     );

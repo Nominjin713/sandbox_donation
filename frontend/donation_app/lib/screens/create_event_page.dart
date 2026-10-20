@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -50,8 +49,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
     final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate != null &&
-              _selectedDate!.isBefore(now)
+      initialDate: _selectedDate != null && _selectedDate!.isBefore(now)
           ? now
           : _selectedDate ?? now,
       firstDate: DateTime(now.year, now.month, now.day),
@@ -195,9 +193,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       hint: 'Жишээ: 30',
                       icon: Icons.groups_rounded,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Оролцогчдын тоог оруулна уу';
@@ -280,11 +276,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE0EDFF),
-            Color(0xFFF2F7FF),
-            Color(0xFFE5F5FF),
-          ],
+          colors: [Color(0xFFE0EDFF), Color(0xFFF2F7FF), Color(0xFFE5F5FF)],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white, width: 2),
@@ -293,10 +285,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(30),
@@ -411,16 +400,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
           fontWeight: FontWeight.normal,
         ),
         prefixIcon: Padding(
-          padding: const EdgeInsets.only(
-            left: 15,
-            right: 11,
-            top: 2,
-          ),
-          child: Icon(
-            icon,
-            color: primaryBlue,
-            size: 21,
-          ),
+          padding: const EdgeInsets.only(left: 15, right: 11, top: 2),
+          child: Icon(icon, color: primaryBlue, size: 21),
         ),
         prefixIconConstraints: const BoxConstraints(
           minWidth: 48,
@@ -442,10 +423,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
-          borderSide: const BorderSide(
-            color: primaryBlue,
-            width: 1.7,
-          ),
+          borderSide: const BorderSide(color: primaryBlue, width: 1.7),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
@@ -453,10 +431,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
-          borderSide: const BorderSide(
-            color: Colors.redAccent,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
         errorStyle: const TextStyle(fontSize: 11),
       ),
@@ -484,10 +459,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         children: [
           const Text(
             'Үйл ажиллагааны төрлөө сонгоно уу',
-            style: TextStyle(
-              color: Color(0xFF7185A5),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -524,9 +496,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       Icon(
                         icons[index],
                         size: 17,
-                        color: selected
-                            ? primaryBlue
-                            : const Color(0xFF8295B5),
+                        color: selected ? primaryBlue : const Color(0xFF8295B5),
                       ),
                       const SizedBox(width: 7),
                       Text(
@@ -608,11 +578,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       height: 59,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF68A6FF),
-            Color(0xFF4389F5),
-            Color(0xFF326EF0),
-          ],
+          colors: [Color(0xFF68A6FF), Color(0xFF4389F5), Color(0xFF326EF0)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -646,10 +612,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
             : const Icon(Icons.send_rounded, size: 21),
         label: Text(
           _isPublishing ? 'Түр хүлээнэ үү...' : 'Үйл ажиллагаа нийтлэх',
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
     );

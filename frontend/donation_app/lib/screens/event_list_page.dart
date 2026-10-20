@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 import 'event_detail_page.dart';
 
 const Color primaryBlue = Color(0xFF4389F5);
@@ -15,8 +15,7 @@ class EventListPage extends StatefulWidget {
 }
 
 class _EventListPageState extends State<EventListPage> {
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   String _selectedCategory = 'Бүгд';
 
@@ -90,8 +89,8 @@ class _EventListPageState extends State<EventListPage> {
     final query = _searchController.text.trim().toLowerCase();
 
     return events.where((event) {
-      final matchesCategory = _selectedCategory == 'Бүгд' ||
-          event['category'] == _selectedCategory;
+      final matchesCategory =
+          _selectedCategory == 'Бүгд' || event['category'] == _selectedCategory;
 
       final matchesSearch =
           (event['title'] ?? '').toLowerCase().contains(query) ||
@@ -151,10 +150,7 @@ class _EventListPageState extends State<EventListPage> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
-                  style: const TextStyle(
-                    color: darkBlue,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: darkBlue, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Үйл ажиллагаа хайх...',
                     hintStyle: const TextStyle(
@@ -186,15 +182,11 @@ class _EventListPageState extends State<EventListPage> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(
-                        color: borderBlue,
-                      ),
+                      borderSide: const BorderSide(color: borderBlue),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(
-                        color: borderBlue,
-                      ),
+                      borderSide: const BorderSide(color: borderBlue),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -216,8 +208,7 @@ class _EventListPageState extends State<EventListPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(width: 9),
+                  separatorBuilder: (_, _) => const SizedBox(width: 9),
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     final selected = _selectedCategory == category;
@@ -337,12 +328,9 @@ class _EventListPageState extends State<EventListPage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return _EventCard(event: filtered[index]);
-                    },
-                    childCount: filtered.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    return _EventCard(event: filtered[index]);
+                  }, childCount: filtered.length),
                 ),
               ),
           ],
@@ -358,11 +346,7 @@ class _EventListPageState extends State<EventListPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE0EDFF),
-            Color(0xFFF0F6FF),
-            Color(0xFFE6F5FF),
-          ],
+          colors: [Color(0xFFE0EDFF), Color(0xFFF0F6FF), Color(0xFFE6F5FF)],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white, width: 2),
@@ -371,10 +355,7 @@ class _EventListPageState extends State<EventListPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(25),
@@ -430,10 +411,7 @@ class _EventListPageState extends State<EventListPage> {
 
   Widget _miniInfo(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
@@ -527,9 +505,7 @@ class _EventCard extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => EventDetailPage(event: event),
-              ),
+              MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
             );
           },
           child: Padding(
@@ -554,11 +530,7 @@ class _EventCard extends StatelessWidget {
                         ),
                         borderRadius: BorderRadius.circular(21),
                       ),
-                      child: Icon(
-                        _eventIcon,
-                        color: _accentColor,
-                        size: 42,
-                      ),
+                      child: Icon(_eventIcon, color: _accentColor, size: 42),
                     ),
                     const SizedBox(width: 14),
                     Expanded(

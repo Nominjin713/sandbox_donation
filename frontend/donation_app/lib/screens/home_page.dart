@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 import 'auth_page.dart';
 import 'event_list_page.dart';
 import 'create_event_page.dart';
@@ -30,9 +30,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openAuth({bool register = false}) async {
-    final session = await Navigator.of(context).push<AuthSession>(MaterialPageRoute(
-      builder: (_) => AuthPage(authService: _authService, register: register),
-    ));
+    final session = await Navigator.of(context).push<AuthSession>(
+      MaterialPageRoute(
+        builder: (_) => AuthPage(authService: _authService, register: register),
+      ),
+    );
     if (mounted && session != null) setState(() => _session = session);
   }
 
@@ -44,7 +46,8 @@ class _HomePageState extends State<HomePage> {
       if (mounted) setState(() => _session = null);
     } on AuthException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) setState(() => _loggingOut = false);
@@ -121,29 +124,37 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     if (_session != null) ...[
-                      Flexible(child: Text('Тавтай морил! ${_session!.name}', overflow: TextOverflow.ellipsis)),
-                      TextButton(onPressed: _loggingOut ? null : _logout, child: const Text('Гарах')),
-                    ] else ...[
-                    TextButton(
-                      onPressed: () => _openAuth(),
-                      child: const Text('Нэвтрэх'),
-                    ),
-                    const SizedBox(width: 4),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: primaryBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      Flexible(
+                        child: Text(
+                          'Тавтай морил! ${_session!.name}',
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      onPressed: () => _openAuth(register: true),
-                      child: const Text('Бүртгүүлэх'),
-                    ),
+                      TextButton(
+                        onPressed: _loggingOut ? null : _logout,
+                        child: const Text('Гарах'),
+                      ),
+                    ] else ...[
+                      TextButton(
+                        onPressed: () => _openAuth(),
+                        child: const Text('Нэвтрэх'),
+                      ),
+                      const SizedBox(width: 4),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => _openAuth(register: true),
+                        child: const Text('Бүртгүүлэх'),
+                      ),
                     ],
                   ],
                 ),
@@ -405,13 +416,10 @@ class _HomePageState extends State<HomePage> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final event = events[index];
-                    return _EventCard(event: event);
-                  },
-                  childCount: events.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final event = events[index];
+                  return _EventCard(event: event);
+                }, childCount: events.length),
               ),
             ),
 

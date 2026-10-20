@@ -204,7 +204,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Имэйл баталгаажуулах'), findsOneWidget);
       await tester.enterText(find.byType(TextFormField), '000000');
-      await tapVisible(tester, find.widgetWithText(ElevatedButton, 'Баталгаажуулах'));
+      await tapVisible(
+        tester,
+        find.widgetWithText(ElevatedButton, 'Баталгаажуулах'),
+      );
       await tester.pumpAndSettle();
       expect(
         find.text('Код буруу эсвэл хугацаа дууссан байна.'),

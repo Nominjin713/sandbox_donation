@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -39,8 +38,7 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         title: const Row(
           children: [
-            Icon(Icons.volunteer_activism,
-                color: primaryColor, size: 30),
+            Icon(Icons.volunteer_activism, color: primaryColor, size: 30),
             SizedBox(width: 8),
             Text(
               'Volunteer Hub',
@@ -57,10 +55,7 @@ class HomeScreen extends StatelessWidget {
         children: [
           const Text(
             'Сайн үйлсэд нэгдээрэй 💚',
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -83,73 +78,73 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 24),
           const Text(
             'Удахгүй болох арга хэмжээнүүд',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 14),
-          ...events.map((event) => Card(
-                color: Colors.white,
-                margin: const EdgeInsets.only(bottom: 14),
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2F3E9),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          event['category']!,
-                          style: const TextStyle(
-                            color: primaryColor,
-                            fontSize: 12,
-                          ),
-                        ),
+          ...events.map(
+            (event) => Card(
+              color: Colors.white,
+              margin: const EdgeInsets.only(bottom: 14),
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        event['title']!,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2F3E9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        event['category']!,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text('🏢 ${event['organization']}'),
-                      const SizedBox(height: 7),
-                      Text('📅 ${event['date']}'),
-                      const SizedBox(height: 7),
-                      Text('📍 ${event['location']}'),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: primaryColor,
-                            side: const BorderSide(
-                                color: primaryColor),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      event['title']!,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('🏢 ${event['organization']}'),
+                    const SizedBox(height: 7),
+                    Text('📅 ${event['date']}'),
+                    const SizedBox(height: 7),
+                    Text('📍 ${event['location']}'),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {},
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primaryColor,
+                          side: const BorderSide(color: primaryColor),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text('Дэлгэрэнгүй үзэх'),
                         ),
+                        child: const Text('Дэлгэрэнгүй үзэх'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 const Color primaryBlue = Color(0xFF4389F5);
@@ -9,10 +8,7 @@ const Color borderBlue = Color(0xFFE3EDFC);
 class EventDetailPage extends StatefulWidget {
   final Map<String, String> event;
 
-  const EventDetailPage({
-    super.key,
-    required this.event,
-  });
+  const EventDetailPage({super.key, required this.event});
 
   @override
   State<EventDetailPage> createState() => _EventDetailPageState();
@@ -110,16 +106,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Хуваалцах үйлдлийг дараа холбож болно.',
-                  ),
+                  content: Text('Хуваалцах үйлдлийг дараа холбож болно.'),
                 ),
               );
             },
-            icon: const Icon(
-              Icons.share_rounded,
-              color: primaryBlue,
-            ),
+            icon: const Icon(Icons.share_rounded, color: primaryBlue),
           ),
           const SizedBox(width: 5),
         ],
@@ -148,10 +139,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   const Center(
                     child: Text(
                       '💙 Сайн үйлсийг хамтдаа бүтээцгээе',
-                      style: TextStyle(
-                        color: Color(0xFF8295B2),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Color(0xFF8295B2), fontSize: 12),
                     ),
                   ),
                 ],
@@ -212,11 +200,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   ),
                 ),
                 Center(
-                  child: Icon(
-                    categoryIcon,
-                    size: 92,
-                    color: categoryColor,
-                  ),
+                  child: Icon(categoryIcon, size: 92, color: categoryColor),
                 ),
                 Positioned(
                   left: 16,
@@ -233,11 +217,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          categoryIcon,
-                          color: categoryColor,
-                          size: 16,
-                        ),
+                        Icon(categoryIcon, color: categoryColor, size: 16),
                         const SizedBox(width: 6),
                         Text(
                           event['category'] ?? 'Бусад',
@@ -465,11 +445,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               color: const Color(0xFFE5EEFF),
               borderRadius: BorderRadius.circular(21),
             ),
-            child: const Icon(
-              Icons.eco_rounded,
-              color: primaryBlue,
-              size: 32,
-            ),
+            child: const Icon(Icons.eco_rounded, color: primaryBlue, size: 32),
           ),
           const SizedBox(width: 14),
           const Expanded(
@@ -505,11 +481,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               ],
             ),
           ),
-          const Icon(
-            Icons.verified_rounded,
-            color: primaryBlue,
-            size: 24,
-          ),
+          const Icon(Icons.verified_rounded, color: primaryBlue, size: 24),
         ],
       ),
     );
@@ -534,11 +506,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   ),
                 ),
               ),
-              Icon(
-                Icons.groups_rounded,
-                color: primaryBlue,
-                size: 23,
-              ),
+              Icon(Icons.groups_rounded, color: primaryBlue, size: 23),
             ],
           ),
           const SizedBox(height: 13),
@@ -564,10 +532,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF76B5FF),
-                        primaryBlue,
-                      ],
+                      colors: [Color(0xFF76B5FF), primaryBlue],
                     ),
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -578,10 +543,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
           const SizedBox(height: 9),
           const Text(
             'Оролцогчдын явцыг бүртгэлтэй болсны дараа харуулна.',
-            style: TextStyle(
-              color: Color(0xFF8A9BB6),
-              fontSize: 11,
-            ),
+            style: TextStyle(color: Color(0xFF8A9BB6), fontSize: 11),
           ),
         ],
       ),
@@ -636,9 +598,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 ),
               ),
               icon: Icon(
-                _hasRequested
-                    ? Icons.check_circle_rounded
-                    : Icons.send_rounded,
+                _hasRequested ? Icons.check_circle_rounded : Icons.send_rounded,
                 size: 20,
               ),
               label: Text(
@@ -702,11 +662,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         color: background,
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Icon(
-        icon,
-        color: foreground,
-        size: 23,
-      ),
+      child: Icon(icon, color: foreground, size: 23),
     );
   }
 }
@@ -730,10 +686,7 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 115),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 13,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 13),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(21),
@@ -748,20 +701,13 @@ class _InfoCard extends StatelessWidget {
               color: color,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 22,
-            ),
+            child: Icon(icon, color: iconColor, size: 22),
           ),
           const SizedBox(height: 9),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF7C8EAA),
-              fontSize: 10,
-            ),
+            style: const TextStyle(color: Color(0xFF7C8EAA), fontSize: 10),
           ),
           const SizedBox(height: 5),
           Text(
