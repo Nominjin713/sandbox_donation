@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -27,3 +28,21 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 16384
 SECURE_CONTENT_TYPE_NOSNIFF = True
+email_config_path = BASE_DIR / 'email.local.json'
+email_config = json.loads(email_config_path.read_text(encoding='utf-8')) if email_config_path.exists() else {}
+
+
+def email_setting(name, default=''):
+    return os.environ.get(name, email_config.get(name, default))
+
+
+EMAIL_BACKEND = email_setting('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = email_setting('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(email_setting('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = email_setting('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = email_setting('EMAIL_HOST_PASSWORD')
+if EMAIL_HOST == 'smtp.gmail.com':
+    EMAIL_HOST_PASSWORD = ''.join(EMAIL_HOST_PASSWORD.split())
+EMAIL_USE_TLS = str(email_setting('EMAIL_USE_TLS', 'true')).lower() == 'true'
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = email_setting('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@example.com')

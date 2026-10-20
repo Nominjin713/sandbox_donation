@@ -1,6 +1,6 @@
 # Django authentication backend
 
-Requires Python 3.12+ and Django. This project contains only registration and login functionality.
+Requires Python 3.12+ and Django. Registration requires email verification before login.
 
 ```powershell
 cd backend
@@ -12,7 +12,37 @@ python -m venv .venv
 
 The API runs at http://localhost:8080. Users and tokens persist in `db.sqlite3`. Django hashes and validates passwords. Tokens expire after 24 hours; logout revokes them. Only token digests are stored in the database. Authentication endpoints allow 20 requests per IP per minute through Django's local cache (per process).
 
-Endpoints: `POST /auth/register` (name, email, password), `POST /auth/login` (email, password), `GET /auth/me`, `POST /auth/logout`. Authenticated requests use `Authorization: Bearer <token>`.
+Endpoints: `POST /auth/register` (name, email, password), `POST /auth/login` (email, password), `POST /auth/verify-email` (email, code), `POST /auth/resend-verification` (email, password), `GET /auth/me`, `POST /auth/logout`. Authenticated requests use `Authorization: Bearer <token>`.
+
+Registration returns `verification_required: true` without a session. Verification accepts a six digit code and returns a session. Login returns 403 with `verification_required: true` until verified. Codes expire after ten minutes and allow five attempts. Resending requires the password, has a 60 second cooldown, and replaces the previous code. Existing accounts must also verify; log in and choose resend to receive a code. Run migrations before starting the updated backend.
+
+Local email settings can be saved in `backend/email.local.json`, which is excluded from Git. Django reads it automatically, including when the server restarts. Environment variables override values in this file. Use this structure with your SMTP account (keep the real password only in the local file):
+
+```json
+{
+  "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+  "EMAIL_HOST": "smtp.gmail.com",
+  "EMAIL_PORT": 587,
+  "EMAIL_USE_TLS": true,
+  "EMAIL_HOST_USER": "sender@gmail.com",
+  "EMAIL_HOST_PASSWORD": "your-app-password",
+  "DEFAULT_FROM_EMAIL": "sender@gmail.com"
+}
+```
+
+Restart the backend after changing this file. Gmail App Password whitespace is removed automatically. Without local settings or environment overrides, development email is printed to the backend terminal. Alternatively, configure environment variables in the same terminal that starts Django (do not commit credentials):
+
+```powershell
+$env:EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+$env:EMAIL_HOST = 'smtp.your-provider.com'
+$env:EMAIL_PORT = '587'
+$env:EMAIL_HOST_USER = 'your-smtp-user'
+$env:EMAIL_HOST_PASSWORD = 'your-smtp-password'
+$env:EMAIL_USE_TLS = 'true'
+$env:DEFAULT_FROM_EMAIL = 'Donation <verified-sender@your-domain.com>'
+```
+
+Production defaults to SMTP. Use credentials and an approved sender from your email provider. Email delivery failures return 503; failed registration is rolled back so it can be retried.
 
 In a second terminal, from the repository root:
 

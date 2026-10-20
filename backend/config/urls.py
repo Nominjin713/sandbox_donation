@@ -7,4 +7,6 @@ urlpatterns = [
     path('auth/login', views.login),
     path('auth/me', views.me),
     path('auth/logout', views.logout),
+    path('auth/verify-email', views.verify),
+    path('auth/resend-verification', views.resend_verification),
 ]

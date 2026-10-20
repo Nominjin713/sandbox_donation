@@ -26,12 +26,22 @@ class _AuthPageState extends State<AuthPage> {
       widget.authService ?? AuthService();
 
   final _form = GlobalKey<FormState>();
+<<<<<<< HEAD
 
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
 
+=======
+  final _name = TextEditingController(),
+      _email = TextEditingController(),
+      _password = TextEditingController(),
+      _confirm = TextEditingController();
+  final _code = TextEditingController();
+  bool _verifying = false;
+  String? _notice;
+>>>>>>> 3337e59cd26466d55d0b5ba4cf9a967778c68a50
   late bool _register = widget.register;
 
   bool _busy = false;
@@ -42,6 +52,7 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   void dispose() {
+<<<<<<< HEAD
     for (final controller in [
       _name,
       _email,
@@ -49,6 +60,10 @@ class _AuthPageState extends State<AuthPage> {
       _confirm,
     ]) {
       controller.dispose();
+=======
+    for (final c in [_name, _email, _password, _confirm, _code]) {
+      c.dispose();
+>>>>>>> 3337e59cd26466d55d0b5ba4cf9a967778c68a50
     }
 
     if (widget.authService == null) {
@@ -70,7 +85,9 @@ class _AuthPageState extends State<AuthPage> {
     });
 
     try {
-      final session = _register
+      final session = _verifying
+          ? await _authService.verifyEmail(email: _email.text, code: _code.text)
+          : _register
           ? await _authService.register(
               name: _name.text.trim(),
               email: _email.text.trim(),
@@ -86,7 +103,15 @@ class _AuthPageState extends State<AuthPage> {
       Navigator.of(context).pop(session);
     } on AuthException catch (error) {
       if (mounted) {
-        setState(() => _error = error.message);
+        setState(() {
+          if (error.verificationRequired) {
+            _verifying = true;
+            _notice = error.message;
+            _error = null;
+          } else {
+            _error = error.message;
+          }
+        });
       }
     } catch (_) {
       if (mounted) {
@@ -98,6 +123,25 @@ class _AuthPageState extends State<AuthPage> {
       if (mounted) {
         setState(() => _busy = false);
       }
+    }
+  }
+
+  Future<void> _resend() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _authService.resendVerification(
+        email: _email.text,
+        password: _password.text,
+      );
+      if (mounted)
+        setState(() => _notice = 'Шинэ код илгээлээ. Имэйлээ шалгана уу.');
+    } on AuthException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -543,6 +587,7 @@ class _AuthPageState extends State<AuthPage> {
                     TextSpan(
                       style: const TextStyle(fontSize: 12),
                       children: [
+<<<<<<< HEAD
                         TextSpan(
                           text: _register
                               ? 'Бүртгэлтэй юу? '
@@ -558,6 +603,209 @@ class _AuthPageState extends State<AuthPage> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
                             color: authBlue,
+=======
+                        const Icon(
+                          Icons.volunteer_activism,
+                          size: 48,
+                          color: Color(0xFF087F6B),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          (_verifying
+                              ? 'Имэйл баталгаажуулах'
+                              : _register
+                              ? 'Бүртгүүлэх'
+                              : 'Нэвтрэх'),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          (_verifying
+                              ? '${_email.text.trim()} хаягт ирсэн кодыг оруулна уу.'
+                              : _register
+                              ? 'Бүртгэл үүсгээд бидэнтэй нэгдээрэй.'
+                              : 'Бүртгэлээрээ нэвтрэн үргэлжлүүлээрэй.'),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 28),
+                        if (_verifying) ...[
+                          TextFormField(
+                            controller: _code,
+                            enabled: !_busy,
+                            keyboardType: TextInputType.number,
+                            maxLength: 6,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            decoration: const InputDecoration(
+                              labelText: 'Баталгаажуулах код',
+                            ),
+                            validator: (v) =>
+                                RegExp(r'^[0-9]{6}$').hasMatch(v ?? '')
+                                ? null
+                                : '6 оронтой код оруулна уу.',
+                            onFieldSubmitted: (_) => _submit(),
+                          ),
+                          TextButton(
+                            onPressed: _busy ? null : _resend,
+                            child: const Text('Код дахин авах'),
+                          ),
+                        ] else ...[
+                          if (_register) ...[
+                            TextFormField(
+                              controller: _name,
+                              enabled: !_busy,
+                              maxLength: 100,
+                              textCapitalization: TextCapitalization.words,
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.name],
+                              decoration: const InputDecoration(
+                                labelText: 'Нэр',
+                                prefixIcon: Icon(Icons.person_outline),
+                              ),
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Нэрээ оруулна уу.'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          TextFormField(
+                            controller: _email,
+                            enabled: !_busy,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            autofillHints: const [AutofillHints.email],
+                            decoration: const InputDecoration(
+                              labelText: 'Имэйл',
+                              prefixIcon: Icon(Icons.mail_outline),
+                            ),
+                            validator: (v) =>
+                                v == null ||
+                                    v.trim().length > 254 ||
+                                    !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                        .hasMatch(v.trim())
+                                ? 'Зөв имэйл оруулна уу.'
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _password,
+                            enabled: !_busy,
+                            obscureText: _hide,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            autofillHints: [
+                              _register
+                                  ? AutofillHints.newPassword
+                                  : AutofillHints.password,
+                            ],
+                            textInputAction: _register
+                                ? TextInputAction.next
+                                : TextInputAction.done,
+                            decoration: InputDecoration(
+                              labelText: 'Нууц үг',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                tooltip: _hide
+                                    ? 'Нууц үг харах'
+                                    : 'Нууц үг нуух',
+                                onPressed: () => setState(() => _hide = !_hide),
+                                icon: Icon(
+                                  _hide
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                              ),
+                            ),
+                            validator: (v) =>
+                                v == null || v.length < 8 || v.length > 128
+                                ? '8–128 тэмдэгттэй нууц үг оруулна уу.'
+                                : null,
+                            onFieldSubmitted: (_) {
+                              if (!_busy && !_register) _submit();
+                            },
+                          ),
+                          if (_register) ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _confirm,
+                              enabled: !_busy,
+                              obscureText: _hide,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.newPassword],
+                              decoration: const InputDecoration(
+                                labelText: 'Нууц үг давтах',
+                                prefixIcon: Icon(Icons.lock_outline),
+                              ),
+                              validator: (v) => v != _password.text
+                                  ? 'Нууц үг таарахгүй байна.'
+                                  : null,
+                              onFieldSubmitted: (_) {
+                                if (!_busy) _submit();
+                              },
+                            ),
+                          ],
+                        ],
+                        if (_notice != null)
+                          Text(_notice!, textAlign: TextAlign.center),
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Text(
+                              _error!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: _busy ? null : _submit,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: _busy
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    (_verifying
+                                        ? 'Баталгаажуулах'
+                                        : _register
+                                        ? 'Бүртгүүлэх'
+                                        : 'Нэвтрэх'),
+                                  ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () {
+                                  _form.currentState?.reset();
+                                  setState(() {
+                                    _register = _verifying ? false : !_register;
+                                    _verifying = false;
+                                    _notice = null;
+                                    _code.clear();
+                                    _hide = true;
+                                    _error = null;
+                                    _password.clear();
+                                    _confirm.clear();
+                                  });
+                                },
+                          child: Text(
+                            _verifying
+                                ? 'Нэвтрэх хэсэгт буцах'
+                                : _register
+                                ? 'Бүртгэлтэй юу? Нэвтрэх'
+                                : 'Бүртгэлгүй юу? Бүртгүүлэх',
+>>>>>>> 3337e59cd26466d55d0b5ba4cf9a967778c68a50
                           ),
                         ),
                       ],

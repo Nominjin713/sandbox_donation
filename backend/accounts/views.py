@@ -1,12 +1,15 @@
 import json
+import logging
+from smtplib import SMTPException
 from functools import wraps
 from django.core.cache import cache
 from django.core.exceptions import ValidationError, RequestDataTooBig
 from django.core.validators import validate_email
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import AuthToken
-from .services import EmailAlreadyRegistered, register_user, login_user, token_digest
+from .models import AuthToken, User
+from django.db import transaction
+from .services import EmailAlreadyRegistered, VerificationRequired, register_user, login_user, token_digest, send_verification, verify_email
 
 
 def error(message, status=400):
@@ -57,7 +60,7 @@ def session(request):
     header = request.headers.get('Authorization', '')
     if not header.startswith('Bearer '):
         return None
-    return AuthToken.objects.select_related('user').filter(digest=token_digest(header[7:]), expires_at__gt=timezone.now(), user__is_active=True).first()
+    return AuthToken.objects.select_related('user').filter(digest=token_digest(header[7:]), expires_at__gt=timezone.now(), user__is_active=True, user__email_verified=True).first()
 
 
 @endpoint('GET')
@@ -75,12 +78,15 @@ def register(request):
     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100:
         return error('Нэрээ оруулна уу (100 хүртэл тэмдэгт).')
     try:
-        user, token = register_user(name=name, email=email, password=password)
+        register_user(name=name, email=email, password=password)
+    except (SMTPException, OSError):
+        logging.getLogger(__name__).exception('Verification email delivery failed')
+        return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
     except ValidationError as exc:
         return error(' '.join(exc.messages))
     except EmailAlreadyRegistered:
         return error('Энэ имэйл бүртгэлтэй байна.', 409)
-    return JsonResponse({'token': token, 'user': user_data(user)}, status=201)
+    return JsonResponse({'verification_required': True, 'message': 'Имэйлд ирсэн 6 оронтой кодыг оруулна уу.'}, status=201)
 
 
 @endpoint('POST', limited=True)
@@ -89,7 +95,10 @@ def login(request):
         _, email, password = credentials(request)
     except ValueError as exc:
         return error(str(exc))
-    result = login_user(request=request, email=email, password=password)
+    try:
+        result = login_user(request=request, email=email, password=password)
+    except VerificationRequired:
+        return JsonResponse({'verification_required': True, 'message': 'Имэйлээ баталгаажуулна уу.'}, status=403)
     if result is None:
         return error('Имэйл эсвэл нууц үг буруу байна.', 401)
     user, token = result
@@ -108,3 +117,40 @@ def logout(request):
     if token:
         token.delete()
     return JsonResponse({'message': 'Амжилттай гарлаа.'})
+
+
+@endpoint('POST', limited=True)
+def verify(request):
+    try:
+        body = json.loads(request.body)
+        email, code = body.get('email'), body.get('code')
+        if not isinstance(email, str) or not isinstance(code, str) or len(code) != 6 or not code.isascii() or not code.isdigit():
+            raise ValueError
+        validate_email(email.strip())
+    except (ValueError, AttributeError, UnicodeDecodeError, ValidationError, RequestDataTooBig):
+        return error('Имэйл болон 6 оронтой код оруулна уу.')
+    result = verify_email(email=email.strip().lower(), code=code)
+    if result is None:
+        return error('Код буруу эсвэл хугацаа дууссан байна. Шинэ код авна уу.')
+    user, token = result
+    return JsonResponse({'token': token, 'user': user_data(user)})
+
+
+@endpoint('POST', limited=True)
+def resend_verification(request):
+    try:
+        _, email, password = credentials(request)
+    except ValueError as exc:
+        return error(str(exc))
+    try:
+        with transaction.atomic():
+            user = User.objects.select_for_update().filter(email__iexact=email, is_active=True, email_verified=False).first()
+            if not user or not user.check_password(password):
+                return error('Имэйл эсвэл нууц үг буруу байна.', 401)
+            send_verification(user)
+    except ValueError as exc:
+        return error(str(exc), 429)
+    except (SMTPException, OSError):
+        logging.getLogger(__name__).exception('Verification email delivery failed')
+        return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
+    return JsonResponse({'message': 'Шинэ код илгээлээ.'})
