@@ -9,7 +9,7 @@ if not DEBUG and SECRET_KEY == 'local-development-only-change-before-deployment'
     raise RuntimeError('Set DJANGO_SECRET_KEY for deployment.')
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2,testserver').split(',')
 CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'http://localhost:3000')
-INSTALLED_APPS = ['django.contrib.auth', 'django.contrib.contenttypes', 'accounts']
+INSTALLED_APPS = ['django.contrib.auth', 'django.contrib.contenttypes', 'accounts','events']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'accounts.middleware.CorsMiddleware', 'django.middleware.common.CommonMiddleware']
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'

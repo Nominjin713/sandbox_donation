@@ -1,5 +1,7 @@
 from django.urls import path
 from accounts import views
+from django.urls import path, include
+
 
 urlpatterns = [
     path('health', views.health),
@@ -9,4 +11,5 @@ urlpatterns = [
     path('auth/logout', views.logout),
     path('auth/verify-email', views.verify),
     path('auth/resend-verification', views.resend_verification),
+    path("events/", include("events.urls")),
 ]
