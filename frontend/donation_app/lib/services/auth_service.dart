@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AuthException implements Exception {
@@ -34,9 +33,7 @@ class AuthService {
   static String get _defaultBaseUrl {
     const configured = String.fromEnvironment('API_URL');
     if (configured.isNotEmpty) return configured;
-    return !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-        ? 'http://10.0.2.2:8080'
-        : 'http://localhost:8080';
+    return 'https://donation-backend-bkms.onrender.com';
   }
 
   final http.Client _client;
@@ -197,7 +194,7 @@ class AuthService {
                   body: jsonEncode(body ?? {}),
                 )
               : _client.get(uri, headers: headers))
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 90));
     } on TimeoutException {
       throw const AuthException(
         'Холболтын хугацаа дууслаа. Дахин оролдоно уу.',
