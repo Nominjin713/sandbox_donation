@@ -298,7 +298,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               vertical: 7,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Text(
@@ -338,7 +338,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               width: 78,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Icon(
@@ -464,14 +464,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Widget _buildCategorySelector() {
-    const colors = [
-      Color(0xFFE3F7EB),
-      Color(0xFFFFE8ED),
-      Color(0xFFEDE7FF),
-      Color(0xFFE3EEFF),
-      Color(0xFFFFF1DB),
-    ];
-
     const icons = [
       Icons.eco_rounded,
       Icons.favorite_rounded,
@@ -625,7 +617,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: primaryBlue.withOpacity(0.27),
+            color: primaryBlue.withValues(alpha: 0.27),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

@@ -216,7 +216,7 @@ class _EventListPageState extends State<EventListPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       const SizedBox(width: 9),
                   itemBuilder: (context, index) {
                     final category = categories[index];
@@ -376,7 +376,7 @@ class _EventListPageState extends State<EventListPage> {
               vertical: 7,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(25),
             ),
             child: const Text(
@@ -435,7 +435,7 @@ class _EventListPageState extends State<EventListPage> {
         vertical: 8,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
+        color: Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -513,7 +513,7 @@ class _EventCard extends StatelessWidget {
         border: Border.all(color: borderBlue),
         boxShadow: [
           BoxShadow(
-            color: darkBlue.withOpacity(0.045),
+            color: darkBlue.withValues(alpha: 0.045),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -547,7 +547,7 @@ class _EventCard extends StatelessWidget {
                         gradient: LinearGradient(
                           colors: [
                             _paleColor,
-                            _paleColor.withOpacity(0.6),
+                            _paleColor.withValues(alpha: 0.6),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,

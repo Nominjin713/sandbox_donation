@@ -171,7 +171,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: darkBlue.withOpacity(0.045),
+            color: darkBlue.withValues(alpha: 0.045),
             blurRadius: 18,
             offset: const Offset(0, 7),
           ),
@@ -190,7 +190,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 colors: [
                   categoryBackground,
                   const Color(0xFFF3F7FF),
-                  categoryBackground.withOpacity(0.7),
+                  categoryBackground.withValues(alpha: 0.7),
                 ],
               ),
               borderRadius: const BorderRadius.vertical(
@@ -206,7 +206,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     width: 145,
                     height: 145,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.28),
+                      color: Colors.white.withValues(alpha: 0.28),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -283,7 +283,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       vertical: 7,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -605,7 +605,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               borderRadius: BorderRadius.circular(19),
               boxShadow: [
                 BoxShadow(
-                  color: primaryBlue.withOpacity(0.23),
+                  color: primaryBlue.withValues(alpha: 0.23),
                   blurRadius: 16,
                   offset: const Offset(0, 7),
                 ),
@@ -686,7 +686,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       border: Border.all(color: borderBlue),
       boxShadow: [
         BoxShadow(
-          color: darkBlue.withOpacity(0.035),
+          color: darkBlue.withValues(alpha: 0.035),
           blurRadius: 15,
           offset: const Offset(0, 5),
         ),
