@@ -5,9 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AuthException implements Exception {
-  const AuthException(this.message, {this.verificationRequired = false});
+  const AuthException(
+    this.message, {
+    this.verificationRequired = false,
+    this.statusCode,
+  });
   final String message;
   final bool verificationRequired;
+  final int? statusCode;
 }
 
 class AuthSession {
@@ -36,6 +41,7 @@ class AuthService {
 
   final http.Client _client;
   final String baseUrl;
+  AuthSession? currentSession;
 
   Future<AuthSession> login({
     required String email,
@@ -103,11 +109,13 @@ class AuthService {
         );
       }
       final user = data['user'] as Map<String, dynamic>;
-      return AuthSession(
+      final session = AuthSession(
         token: data['token'] as String,
         name: user['name'] as String,
         email: user['email'] as String,
       );
+      currentSession = session;
+      return session;
     } on AuthException {
       rethrow;
     } catch (_) {
@@ -122,24 +130,74 @@ class AuthService {
     if (response.statusCode != 200) {
       throw const AuthException('Гарч чадсангүй. Дахин оролдоно уу.');
     }
+    currentSession = null;
+  }
+
+  Future<Map<String, dynamic>> request(
+    String path, {
+    Map<String, dynamic>? body,
+    bool post = false,
+  }) async {
+    final response = await _send(
+      path,
+      body: body,
+      token: currentSession?.token,
+      post: post,
+    );
+    try {
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        if (response.statusCode == 401) currentSession = null;
+        final errors = data['errors'];
+        final details = errors is Map
+            ? errors.values
+                  .expand((value) => value is List ? value : [value])
+                  .join('\n')
+            : '';
+        throw AuthException(
+          details.isNotEmpty
+              ? details
+              : data['message'] as String? ?? 'Алдаа гарлаа.',
+          statusCode: response.statusCode,
+        );
+      }
+      return data;
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      throw const AuthException(
+        'Серверийн хариуг уншиж чадсангүй. Дахин оролдоно уу.',
+      );
+    }
   }
 
   Future<http.Response> _post(
     String path, {
     Map<String, String>? body,
     String? token,
+  }) => _send(path, body: body, token: token, post: true);
+
+  Future<http.Response> _send(
+    String path, {
+    Map<String, dynamic>? body,
+    String? token,
+    bool post = false,
   }) async {
     try {
-      return await _client
-          .post(
-            Uri.parse('${baseUrl.replaceAll(RegExp(r'/$'), '')}$path'),
-            headers: {
-              'Content-Type': 'application/json',
-              if (token != null) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(body ?? {}),
-          )
-          .timeout(const Duration(seconds: 15));
+      final uri = Uri.parse('${baseUrl.replaceAll(RegExp(r'/$'), '')}$path');
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      return await (post
+              ? _client.post(
+                  uri,
+                  headers: headers,
+                  body: jsonEncode(body ?? {}),
+                )
+              : _client.get(uri, headers: headers))
+          .timeout(const Duration(seconds: 30));
     } on TimeoutException {
       throw const AuthException(
         'Холболтын хугацаа дууслаа. Дахин оролдоно уу.',

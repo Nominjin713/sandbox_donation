@@ -5,6 +5,7 @@ db.sqlite3
 .env
 email.local.json
 database.local.json
+database.local.json.tmp
 database.supabase.local.json
 backups/
 deploy.env

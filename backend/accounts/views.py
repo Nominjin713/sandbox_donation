@@ -6,10 +6,10 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError, RequestDataTooBig
 from django.core.validators import validate_email
 from django.http import JsonResponse
-from django.utils import timezone
-from .models import AuthToken, User
+from .models import User
+from .authentication import get_session as session
 from django.db import transaction
-from .services import EmailAlreadyRegistered, VerificationRequired, register_user, login_user, token_digest, send_verification, verify_email
+from .services import EmailAlreadyRegistered, VerificationRequired, register_user, login_user, send_verification, verify_email
 
 
 def error(message, status=400):
@@ -54,13 +54,6 @@ def credentials(request):
     if len(email) > 254 or not 8 <= len(password) <= 128:
         raise ValueError('Зөв имэйл болон 8–128 тэмдэгттэй нууц үг оруулна уу.')
     return body, email, password
-
-
-def session(request):
-    header = request.headers.get('Authorization', '')
-    if not header.startswith('Bearer '):
-        return None
-    return AuthToken.objects.select_related('user').filter(digest=token_digest(header[7:]), expires_at__gt=timezone.now(), user__is_active=True, user__email_verified=True).first()
 
 
 @endpoint('GET')

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/auth_service.dart';
+import '../services/event_service.dart';
+import 'auth_page.dart';
+
 const Color primaryBlue = Color(0xFF4389F5);
 const Color darkBlue = Color(0xFF19345C);
 const Color backgroundBlue = Color(0xFFF2F7FF);
 const Color borderBlue = Color(0xFFDCE8FF);
 
 class CreateEventPage extends StatefulWidget {
-  const CreateEventPage({super.key});
+  const CreateEventPage({super.key, required this.authService});
+  final AuthService authService;
 
   @override
   State<CreateEventPage> createState() => _CreateEventPageState();
@@ -15,6 +20,14 @@ class CreateEventPage extends StatefulWidget {
 
 class _CreateEventPageState extends State<CreateEventPage> {
   final _formKey = GlobalKey<FormState>();
+  late final _events = EventService(widget.authService);
+  final _eventId = EventService.newId();
+  late final _organizationController = TextEditingController(
+    text: widget.authService.currentSession?.name ?? '',
+  );
+  final _endDateController = TextEditingController();
+  DateTime? _selectedEndDate;
+  String? _error;
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -36,6 +49,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   @override
   void dispose() {
+    _organizationController.dispose();
+    _endDateController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _dateController.dispose();
@@ -44,42 +59,47 @@ class _CreateEventPageState extends State<CreateEventPage> {
     super.dispose();
   }
 
-  Future<void> _chooseDate() async {
+  Future<void> _chooseDate({bool end = false}) async {
+    if (_isPublishing) return;
     final now = DateTime.now();
-
+    final initial = end
+        ? _selectedEndDate ??
+              (_selectedDate ?? now).add(const Duration(hours: 1))
+        : _selectedDate ?? now;
+    final firstDay = DateTime(now.year, now.month, now.day);
     final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate != null && _selectedDate!.isBefore(now)
-          ? now
-          : _selectedDate ?? now,
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: DateTime(now.year + 5),
-      helpText: 'Үйл ажиллагааны огноо сонгох',
+      initialDate: initial.isBefore(firstDay) ? firstDay : initial,
+      firstDate: firstDay,
+      lastDate: DateTime(now.year + 5, 12, 31),
+      helpText: end ? 'Дуусах огноо сонгох' : 'Эхлэх огноо сонгох',
       cancelText: 'Болих',
       confirmText: 'Сонгох',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: primaryBlue,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: darkBlue,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
-
-    if (date != null) {
-      setState(() {
-        _selectedDate = date;
-        _dateController.text =
-            '${date.year}.${date.month.toString().padLeft(2, '0')}.'
-            '${date.day.toString().padLeft(2, '0')}';
-      });
-    }
+    if (!mounted || date == null) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+      confirmText: 'Сонгох',
+      cancelText: 'Болих',
+    );
+    if (!mounted || time == null) return;
+    final selected = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      if (end) {
+        _selectedEndDate = selected;
+        _endDateController.text = EventRecord.dateLabel(selected);
+      } else {
+        _selectedDate = selected;
+        _dateController.text = EventRecord.dateLabel(selected);
+      }
+    });
   }
 
   @override
@@ -126,6 +146,21 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     _buildBanner(),
                     const SizedBox(height: 24),
 
+                    _buildLabel('Зохион байгуулагч / байгууллага'),
+                    const SizedBox(height: 9),
+                    _buildField(
+                      controller: _organizationController,
+                      hint: 'Зохион байгуулагчийн нэр',
+                      icon: Icons.business_outlined,
+                      validator: (value) =>
+                          value == null ||
+                              value.trim().isEmpty ||
+                              value.trim().length > 50
+                          ? '1–50 тэмдэгттэй нэр оруулна уу.'
+                          : null,
+                    ),
+                    const SizedBox(height: 22),
+
                     _buildLabel('Үйл ажиллагааны нэр'),
                     const SizedBox(height: 9),
                     _buildField(
@@ -133,7 +168,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       hint: 'Жишээ: Мод тарих өдөрлөг',
                       icon: Icons.flag_rounded,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        if (value == null ||
+                            value.trim().isEmpty ||
+                            value.trim().length > 200) {
                           return 'Үйл ажиллагааны нэрээ оруулна уу';
                         }
                         return null;
@@ -186,6 +223,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     ),
                     const SizedBox(height: 22),
 
+                    _dateField(end: true),
+                    const SizedBox(height: 22),
                     _buildLabel('Оролцогчдын тоо'),
                     const SizedBox(height: 9),
                     _buildField(
@@ -201,8 +240,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
                         final count = int.tryParse(value.trim());
 
-                        if (count == null || count <= 0) {
-                          return '1-ээс их тоо оруулна уу';
+                        if (count == null || count <= 0 || count > 2147483647) {
+                          return '1–2147483647 бүхэл тоо оруулна уу';
                         }
 
                         return null;
@@ -232,6 +271,16 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     ),
                     const SizedBox(height: 28),
 
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
                     _buildPublishButton(),
                     const SizedBox(height: 17),
 
@@ -380,6 +429,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     bool readOnly = false,
   }) {
     return TextFormField(
+      enabled: !_isPublishing,
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
@@ -472,7 +522,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               return InkWell(
                 borderRadius: BorderRadius.circular(30),
                 onTap: () {
-                  setState(() => _category = category);
+                  if (!_isPublishing) setState(() => _category = category);
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
@@ -528,21 +578,27 @@ class _CreateEventPageState extends State<CreateEventPage> {
     );
   }
 
-  Widget _dateField() {
+  Widget _dateField({bool end = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Огноо'),
+        _buildLabel(end ? 'Дуусах огноо, цаг' : 'Эхлэх огноо, цаг'),
         const SizedBox(height: 9),
         _buildField(
-          controller: _dateController,
-          hint: 'Огноо сонгох',
+          controller: end ? _endDateController : _dateController,
+          hint: end ? 'Дуусах огноо сонгох' : 'Эхлэх огноо сонгох',
           icon: Icons.calendar_month_rounded,
           readOnly: true,
-          onTap: _chooseDate,
+          onTap: () => _chooseDate(end: end),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Огноо сонгоно уу';
+            }
+            if (end &&
+                _selectedDate != null &&
+                _selectedEndDate != null &&
+                !_selectedEndDate!.isAfter(_selectedDate!)) {
+              return 'Дуусах цаг эхлэх цагаас хойш байна.';
             }
             return null;
           },
@@ -618,32 +674,52 @@ class _CreateEventPageState extends State<CreateEventPage> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_isPublishing || !_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isPublishing = true);
-
-    // Одоогоор backend-д хадгалахгүй, зөвхөн
-    // маягтын мэдээллийг шалгаж байна.
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-
-      setState(() => _isPublishing = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: darkBlue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: const Text(
-            'Мэдээлэл зөв бөглөгдлөө. Backend-тэй холбосны дараа нийтлэгдэнэ.',
-          ),
+    if (widget.authService.currentSession == null) {
+      await Navigator.of(context).push<AuthSession>(
+        MaterialPageRoute(
+          builder: (_) => AuthPage(authService: widget.authService),
         ),
       );
+      if (!mounted || widget.authService.currentSession == null) return;
+    }
+    setState(() {
+      _isPublishing = true;
+      _error = null;
     });
+    try {
+      final event = await _events.create(
+        id: _eventId,
+        title: _titleController.text,
+        description: _descriptionController.text,
+        organization: _organizationController.text,
+        category: categoryCode(_category),
+        location: _locationController.text,
+        startsAt: _selectedDate!,
+        endsAt: _selectedEndDate!,
+        capacity: int.parse(_slotsController.text.trim()),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(event);
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+      if (error.statusCode == 401) {
+        await Navigator.of(context).push<AuthSession>(
+          MaterialPageRoute(
+            builder: (_) => AuthPage(authService: widget.authService),
+          ),
+        );
+        if (mounted && widget.authService.currentSession != null) {
+          setState(
+            () => _error = 'Нэвтэрлээ. Мэдээллээ шалгаад дахин нийтлээрэй.',
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
+    }
   }
 }

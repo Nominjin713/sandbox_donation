@@ -41,3 +41,21 @@ class DatabaseSettingsTests(TestCase):
         config = database_settings(self.base)
         self.assertEqual(config['ENGINE'], 'django.db.backends.sqlite3')
         self.assertEqual(config['NAME'], self.base / 'db.sqlite3')
+
+    def test_render_url_overrides_local_database_and_decodes_password(self):
+        (self.base / 'database.local.json').write_text(json.dumps({'HOST': '127.0.0.1', 'SCHEMA': 'old_schema'}))
+        os.environ['DATABASE_URL'] = 'postgresql://app:p%40ss%3Aword@render.internal:5432/donation'
+        config = database_settings(self.base)
+        self.assertEqual(config['HOST'], 'render.internal')
+        self.assertEqual(config['NAME'], 'donation')
+        self.assertEqual(config['PASSWORD'], 'p@ss:word')
+        self.assertEqual(config['OPTIONS']['sslmode'], 'require')
+        self.assertNotIn('options', config['OPTIONS'])
+
+    def test_invalid_render_url_does_not_expose_credentials(self):
+        for url in ('mysql://app:private@host/db', 'postgresql://app:private@host:bad/db', 'postgresql:///db'):
+            os.environ['DATABASE_URL'] = url
+            with self.subTest(url_scheme=url.split(':')[0]):
+                with self.assertRaises(ImproperlyConfigured) as failure:
+                    database_settings(self.base)
+                self.assertNotIn('private', str(failure.exception))

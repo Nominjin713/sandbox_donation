@@ -4,6 +4,8 @@ import 'auth_page.dart';
 import 'event_list_page.dart';
 import 'create_event_page.dart';
 import '../services/auth_service.dart';
+import '../services/event_service.dart';
+import 'event_detail_page.dart';
 
 const Color primaryBlue = Color(0xFF4389F5);
 const Color darkBlue = Color(0xFF19345C);
@@ -20,7 +22,72 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final AuthService _authService = widget.authService ?? AuthService();
-  AuthSession? _session;
+  AuthSession? get _session => _authService.currentSession;
+  late final _eventService = EventService(_authService);
+  List<EventRecord> _events = [];
+  bool _loadingEvents = true;
+  String? _eventsError;
+  int _loadVersion = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    if (!mounted) return;
+    final version = ++_loadVersion;
+    setState(() {
+      _loadingEvents = true;
+      _eventsError = null;
+    });
+    try {
+      final page = await _eventService.list(limit: 3, upcoming: true);
+      if (mounted && version == _loadVersion) {
+        setState(() => _events = page.events);
+      }
+    } on AuthException catch (error) {
+      if (mounted && version == _loadVersion) {
+        setState(() => _eventsError = error.message);
+      }
+    } finally {
+      if (mounted && version == _loadVersion) {
+        setState(() => _loadingEvents = false);
+      }
+    }
+  }
+
+  Future<void> _openEvents() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EventListPage(authService: _authService),
+      ),
+    );
+    if (mounted) {
+      setState(() {});
+      _loadEvents();
+    }
+  }
+
+  Future<void> _openCreate() async {
+    if (_session == null) await _openAuth();
+    if (!mounted || _session == null) return;
+    final event = await Navigator.of(context).push<EventRecord>(
+      MaterialPageRoute(
+        builder: (_) => CreateEventPage(authService: _authService),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {});
+    if (event != null) {
+      _loadEvents();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Үйл ажиллагаа амжилттай нийтлэгдлээ.')),
+      );
+    }
+  }
+
   bool _loggingOut = false;
 
   @override
@@ -35,7 +102,7 @@ class _HomePageState extends State<HomePage> {
         builder: (_) => AuthPage(authService: _authService, register: register),
       ),
     );
-    if (mounted && session != null) setState(() => _session = session);
+    if (mounted && session != null) setState(() {});
   }
 
   Future<void> _logout() async {
@@ -43,7 +110,10 @@ class _HomePageState extends State<HomePage> {
     setState(() => _loggingOut = true);
     try {
       await _authService.logout(_session!.token);
-      if (mounted) setState(() => _session = null);
+      if (mounted) {
+        setState(() {});
+        _loadEvents();
+      }
     } on AuthException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -53,36 +123,6 @@ class _HomePageState extends State<HomePage> {
       if (mounted) setState(() => _loggingOut = false);
     }
   }
-
-  final List<Map<String, dynamic>> events = const [
-    {
-      'title': 'Мод тарих өдөрлөг',
-      'category': 'Байгаль орчин',
-      'date': '2026.10.25',
-      'location': 'Улаанбаатар хот',
-      'people': '30/50',
-      'icon': Icons.park_rounded,
-      'color': Color(0xFFDFF7E9),
-    },
-    {
-      'title': 'Хүүхдүүдэд тусалъя',
-      'category': 'Нийгмийн халамж',
-      'date': '2026.10.28',
-      'location': 'Сүхбаатар дүүрэг',
-      'people': '15/30',
-      'icon': Icons.volunteer_activism_rounded,
-      'color': Color(0xFFFFE9E7),
-    },
-    {
-      'title': 'Орчны цэвэрлэгээ',
-      'category': 'Цэвэр орчин',
-      'date': '2026.11.01',
-      'location': 'Үндэсний цэцэрлэгт хүрээлэн',
-      'people': '20/40',
-      'icon': Icons.cleaning_services_rounded,
-      'color': Color(0xFFE5EEFF),
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -224,14 +264,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 22),
                       FilledButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const EventListPage(),
-                            ),
-                          );
-                        },
+                        onPressed: _openEvents,
                         style: FilledButton.styleFrom(
                           backgroundColor: primaryBlue,
                           foregroundColor: Colors.white,
@@ -332,14 +365,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EventListPage(),
-                          ),
-                        );
-                      },
+                      onPressed: _openEvents,
                       child: const Text('Бүгдийг үзэх →'),
                     ),
                   ],
@@ -382,6 +408,30 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
+            if (_loadingEvents)
+              const SliverToBoxAdapter(child: LinearProgressIndicator()),
+            if (_eventsError != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    children: [
+                      Text(_eventsError!),
+                      TextButton(
+                        onPressed: _loadEvents,
+                        child: const Text('Дахин оролдох'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (!_loadingEvents && _eventsError == null && _events.isEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(18),
+                  child: Text('Үйл ажиллагаа хараахан нийтлэгдээгүй байна.'),
+                ),
+              ),
             // UPCOMING EVENTS
             SliverToBoxAdapter(
               child: Padding(
@@ -399,14 +449,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EventListPage(),
-                          ),
-                        );
-                      },
+                      onPressed: _openEvents,
                       child: const Text('Бүгд →'),
                     ),
                   ],
@@ -417,9 +460,32 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final event = events[index];
-                  return _EventCard(event: event);
-                }, childCount: events.length),
+                  final event = _events[index];
+                  return GestureDetector(
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EventDetailPage(
+                            event: event.toDisplay(),
+                            authService: _authService,
+                          ),
+                        ),
+                      );
+                      if (mounted) {
+                        setState(() {});
+                        _loadEvents();
+                      }
+                    },
+                    child: _EventCard(
+                      event: {
+                        ...event.toDisplay(),
+                        'icon': Icons.volunteer_activism_rounded,
+                        'color': lightBlue,
+                        'people': '${event.participantCount}/${event.capacity}',
+                      },
+                    ),
+                  );
+                }, childCount: _events.length),
               ),
             ),
 
@@ -533,14 +599,7 @@ class _HomePageState extends State<HomePage> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const CreateEventPage(),
-                              ),
-                            );
-                          },
+                          onPressed: _openCreate,
                           style: FilledButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: primaryBlue,
@@ -679,14 +738,18 @@ class _CategoryCard extends StatelessWidget {
             child: Icon(icon, color: iconColor, size: 25),
           ),
           const SizedBox(height: 9),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: darkBlue,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: darkBlue,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
             ),
           ),
         ],

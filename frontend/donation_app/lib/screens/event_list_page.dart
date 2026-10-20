@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'dart:async';
+
+import '../services/auth_service.dart';
+import '../services/event_service.dart';
+
 import 'event_detail_page.dart';
 
 const Color primaryBlue = Color(0xFF4389F5);
@@ -8,7 +13,8 @@ const Color backgroundBlue = Color(0xFFF4F8FF);
 const Color borderBlue = Color(0xFFE3EDFC);
 
 class EventListPage extends StatefulWidget {
-  const EventListPage({super.key});
+  const EventListPage({super.key, this.authService});
+  final AuthService? authService;
 
   @override
   State<EventListPage> createState() => _EventListPageState();
@@ -16,6 +22,66 @@ class EventListPage extends StatefulWidget {
 
 class _EventListPageState extends State<EventListPage> {
   final TextEditingController _searchController = TextEditingController();
+  late final _api = widget.authService ?? AuthService();
+  late final _service = EventService(_api);
+  List<Map<String, String>> _events = [];
+  bool _loading = false;
+  String? _error;
+  int? _nextOffset;
+  int _total = 0, _version = 0;
+  Timer? _searchTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load({bool more = false}) async {
+    if (!mounted) return;
+    if (more && (_loading || _nextOffset == null)) return;
+    final version = ++_version;
+    setState(() {
+      _loading = true;
+      _error = null;
+      if (!more) {
+        _events = [];
+        _nextOffset = null;
+        _total = 0;
+      }
+    });
+    try {
+      final page = await _service.list(
+        query: _searchController.text.trim(),
+        category: _selectedCategory == 'Бүгд'
+            ? ''
+            : categoryCode(_selectedCategory),
+        offset: more ? _nextOffset! : 0,
+      );
+      if (mounted && version == _version) {
+        setState(() {
+          _events = [
+            ...(more ? _events : <Map<String, String>>[]),
+            ...page.events.map((event) => event.toDisplay()),
+          ];
+          _nextOffset = page.nextOffset;
+          _total = page.count;
+        });
+      }
+    } on AuthException catch (error) {
+      if (mounted && version == _version) {
+        setState(() => _error = error.message);
+      }
+    } finally {
+      if (mounted && version == _version) setState(() => _loading = false);
+    }
+  }
+
+  void _search() {
+    ++_version;
+    _searchTimer?.cancel();
+    _searchTimer = Timer(const Duration(milliseconds: 300), () => _load());
+  }
 
   String _selectedCategory = 'Бүгд';
 
@@ -28,59 +94,10 @@ class _EventListPageState extends State<EventListPage> {
     'Бусад',
   ];
 
-  static const List<Map<String, String>> events = [
-    {
-      'title': 'Мод тарих өдөрлөг',
-      'date': '2026.10.25',
-      'location': 'Улаанбаатар хот',
-      'category': 'Байгаль орчин',
-      'description':
-          'Ногоон орчноо нэмэгдүүлэх зорилгоор мод тарина. '
-          'Та бүхнийг сайн дурын ажилд урьж байна.',
-      'slots': '30',
-      'color': 'green',
-      'icon': 'tree',
-    },
-    {
-      'title': 'Хүүхдүүдэд тусалъя',
-      'date': '2026.10.28',
-      'location': 'Сүхбаатар дүүрэг',
-      'category': 'Нийгмийн халамж',
-      'description':
-          'Хүүхдүүдтэй цагийг өнгөрүүлж, тэдэнд туслах '
-          'сайн дурын үйл ажиллагаа.',
-      'slots': '15',
-      'color': 'pink',
-      'icon': 'heart',
-    },
-    {
-      'title': 'Орчны цэвэрлэгээ',
-      'date': '2026.11.01',
-      'location': 'Үндэсний цэцэрлэгт хүрээлэн',
-      'category': 'Цэвэр орчин',
-      'description':
-          'Нийтийн эзэмшлийн талбайг цэвэрлэж, '
-          'байгаль орчноо хамгаалцгаая.',
-      'slots': '40',
-      'color': 'blue',
-      'icon': 'clean',
-    },
-    {
-      'title': 'Номын сан тохижуулах',
-      'date': '2026.11.05',
-      'location': 'Баянзүрх дүүрэг',
-      'category': 'Боловсрол',
-      'description':
-          'Хүүхэд залуусын сурах орчныг сайжруулж, '
-          'номын санг хамтдаа тохижуулна.',
-      'slots': '20',
-      'color': 'purple',
-      'icon': 'book',
-    },
-  ];
-
   @override
   void dispose() {
+    _searchTimer?.cancel();
+    if (widget.authService == null) _api.close();
     _searchController.dispose();
     super.dispose();
   }
@@ -88,7 +105,7 @@ class _EventListPageState extends State<EventListPage> {
   List<Map<String, String>> get filteredEvents {
     final query = _searchController.text.trim().toLowerCase();
 
-    return events.where((event) {
+    return _events.where((event) {
       final matchesCategory =
           _selectedCategory == 'Бүгд' || event['category'] == _selectedCategory;
 
@@ -132,6 +149,13 @@ class _EventListPageState extends State<EventListPage> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Шинэчлэх',
+            onPressed: _loading ? null : () => _load(),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -149,7 +173,7 @@ class _EventListPageState extends State<EventListPage> {
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 15),
                 child: TextField(
                   controller: _searchController,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (_) => _search(),
                   style: const TextStyle(color: darkBlue, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Үйл ажиллагаа хайх...',
@@ -166,7 +190,7 @@ class _EventListPageState extends State<EventListPage> {
                         ? IconButton(
                             onPressed: () {
                               _searchController.clear();
-                              setState(() {});
+                              _load();
                             },
                             icon: const Icon(
                               Icons.close_rounded,
@@ -219,6 +243,8 @@ class _EventListPageState extends State<EventListPage> {
                       showCheckmark: false,
                       onSelected: (_) {
                         setState(() => _selectedCategory = category);
+                        _searchTimer?.cancel();
+                        _load();
                       },
                       labelStyle: TextStyle(
                         color: selected ? Colors.white : darkBlue,
@@ -269,7 +295,7 @@ class _EventListPageState extends State<EventListPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '${filtered.length} ажил',
+                        '$_total ажил',
                         style: const TextStyle(
                           color: primaryBlue,
                           fontSize: 11,
@@ -283,7 +309,24 @@ class _EventListPageState extends State<EventListPage> {
             ),
 
             // EVENT CARDS
-            if (filtered.isEmpty)
+            if (_loading)
+              const SliverToBoxAdapter(child: LinearProgressIndicator()),
+            if (_error != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Text(_error!),
+                      TextButton(
+                        onPressed: () => _load(more: _events.isNotEmpty),
+                        child: const Text('Дахин оролдох'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (filtered.isEmpty && !_loading && _error == null)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(35),
@@ -329,8 +372,19 @@ class _EventListPageState extends State<EventListPage> {
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    return _EventCard(event: filtered[index]);
+                    return _EventCard(
+                      event: filtered[index],
+                      api: _api,
+                      onChanged: () => _load(),
+                    );
                   }, childCount: filtered.length),
+                ),
+              ),
+            if (_nextOffset != null && !_loading)
+              SliverToBoxAdapter(
+                child: TextButton(
+                  onPressed: () => _load(more: true),
+                  child: const Text('Цааш үзэх'),
                 ),
               ),
           ],
@@ -437,8 +491,14 @@ class _EventListPageState extends State<EventListPage> {
 
 class _EventCard extends StatelessWidget {
   final Map<String, String> event;
+  final AuthService api;
+  final VoidCallback onChanged;
 
-  const _EventCard({required this.event});
+  const _EventCard({
+    required this.event,
+    required this.api,
+    required this.onChanged,
+  });
 
   Color get _accentColor {
     switch (event['color']) {
@@ -502,11 +562,14 @@ class _EventCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(25),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
+              MaterialPageRoute(
+                builder: (_) => EventDetailPage(event: event, authService: api),
+              ),
             );
+            onChanged();
           },
           child: Padding(
             padding: const EdgeInsets.all(15),

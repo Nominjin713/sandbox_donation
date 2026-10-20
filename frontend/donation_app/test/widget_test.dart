@@ -42,7 +42,13 @@ void main() {
     final requests = <http.Request>[];
     final service = AuthService(
       client: MockClient((request) async {
-        requests.add(request);
+        if (request.url.path.startsWith('/auth/')) requests.add(request);
+        if (request.url.path == '/events/') {
+          return http.Response(
+            jsonEncode({'events': [], 'count': 0, 'next_offset': null}),
+            200,
+          );
+        }
         if (request.url.path == '/auth/logout') return http.Response('{}', 200);
         return http.Response(
           jsonEncode({
@@ -80,7 +86,13 @@ void main() {
       final requests = <http.Request>[];
       final service = AuthService(
         client: MockClient((request) async {
-          requests.add(request);
+          if (request.url.path.startsWith('/auth/')) requests.add(request);
+          if (request.url.path == '/events/') {
+            return http.Response(
+              jsonEncode({'events': [], 'count': 0, 'next_offset': null}),
+              200,
+            );
+          }
           if (request.url.path == '/auth/register') {
             return http.Response(
               jsonEncode({'verification_required': true}),

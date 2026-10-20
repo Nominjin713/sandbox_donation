@@ -8,6 +8,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'local-development-only-change-
 if not DEBUG and SECRET_KEY == 'local-development-only-change-before-deployment':
     raise RuntimeError('Set DJANGO_SECRET_KEY for deployment.')
 default_hosts = os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost,127.0.0.1,10.0.2.2,testserver')
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    default_hosts += ',' + os.environ['RENDER_EXTERNAL_HOSTNAME']
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', default_hosts).split(',') if host.strip()]
 CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'http://localhost:3000')
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', CORS_ORIGIN).split(',') if origin.strip()]
@@ -48,4 +50,5 @@ if EMAIL_HOST == 'smtp.gmail.com':
     EMAIL_HOST_PASSWORD = ''.join(EMAIL_HOST_PASSWORD.split())
 EMAIL_USE_TLS = str(email_setting('EMAIL_USE_TLS', 'true')).lower() == 'true'
 EMAIL_TIMEOUT = 10
+RESEND_API_KEY = email_setting('RESEND_API_KEY')
 DEFAULT_FROM_EMAIL = email_setting('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@example.com')

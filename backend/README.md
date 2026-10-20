@@ -1,5 +1,13 @@
 # Django authentication backend
 
+Зургийн дагуух database хүснэгт, холбоос, PostgreSQL дээр үүсгэх дараалал: [DATABASE.md](DATABASE.md).
+
+Render дээр байрлуулах одоогийн дараалал: [RENDER.md](RENDER.md).
+
+Үйл ажиллагаа үүсгэх backend: `POST /events/create`. Bearer token, request/response жишээ болон validation дүрмийг [events/API.md](events/API.md)-ээс үзнэ үү.
+
+Flutter-ийн нийтлэх, жагсаалт, дэлгэрэнгүй, оролцох/цуцлах урсгал API-тай холбогдсон. Backend-ийн migration-уудыг `manage.py migrate` командаар хэрэгжүүлээд серверээ асаана. Frontend-ийг `flutter run -d chrome --web-port=3000` командаар ажиллуулна; өөр backend хаягт `--dart-define=API_URL=https://YOUR_BACKEND_HOST` ашиглана.
+
 Online backend deployment instructions are in [DEPLOY.md](DEPLOY.md). The database can use the existing Supabase PostgreSQL connection through private `database.local.json` settings or hosting `DB_*` environment variables. People cloning the repo do not receive private database/email settings. After hosting the backend, run Flutter with `--dart-define=API_URL=https://YOUR_BACKEND_HOST` to use the shared API.
 
 Requires Python 3.12+ and Django. Registration requires email verification before login.
@@ -12,7 +20,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8080
 ```
 
-The API runs at http://localhost:8080. Users and tokens persist in `db.sqlite3`. Django hashes and validates passwords. Tokens expire after 24 hours; logout revokes them. Only token digests are stored in the database. Authentication endpoints allow 20 requests per IP per minute through Django's local cache (per process).
+The API runs at http://localhost:8080. Users and tokens persist in the configured PostgreSQL database (SQLite is an explicit test override). Django hashes and validates passwords. Tokens expire after 24 hours; logout revokes them. Only token digests are stored in the database. Authentication endpoints allow 20 requests per IP per minute through Django's local cache (per process).
 
 Endpoints: `POST /auth/register` (name, email, password), `POST /auth/login` (email, password), `POST /auth/verify-email` (email, code), `POST /auth/resend-verification` (email, password), `GET /auth/me`, `POST /auth/logout`. Authenticated requests use `Authorization: Bearer <token>`.
 
