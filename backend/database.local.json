@@ -1,0 +1,9 @@
+{
+  "NAME": "postgres",
+  "USER": "postgres.djkipbkhyxdppqqfbmqu",
+  "PASSWORD": "Donation12@(_)",
+  "HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
+  "PORT": "5432",
+  "SSLMODE": "require",
+  "SCHEMA": "donation"
+}

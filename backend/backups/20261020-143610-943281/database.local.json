@@ -1,0 +1,7 @@
+{
+  "NAME": "donation",
+  "USER": "donation_user",
+  "PASSWORD": "il-FrPHq0rVaYRsrias9FT-bpZEvxbltvhhvqTKZ9dI",
+  "HOST": "127.0.0.1",
+  "PORT": "5432"
+}
