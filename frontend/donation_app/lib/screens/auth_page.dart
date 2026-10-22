@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import 'forgot_password_page.dart';
-
-const Color authBlue = Color(0xFF4389F5);
-const Color authDarkBlue = Color(0xFF19345C);
-const Color authBackground = Color(0xFFF4F8FF);
-const Color authBorder = Color(0xFFE3EDFC);
+import 'auth_style.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, this.authService, this.register = false});
