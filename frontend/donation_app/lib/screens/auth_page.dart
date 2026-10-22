@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import 'forgot_password_page.dart';
 
 const Color authBlue = Color(0xFF4389F5);
 const Color authDarkBlue = Color(0xFF19345C);
@@ -538,6 +539,35 @@ class _AuthPageState extends State<AuthPage> {
 
               const SizedBox(height: 24),
               _buildSubmitButton(),
+              if (!_register && !_verifying)
+                TextButton(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final reset = await Navigator.of(context).push<bool>(
+                            MaterialPageRoute(
+                              builder: (_) => ForgotPasswordPage(
+                                authService: _authService,
+                                email: _email.text.trim(),
+                              ),
+                            ),
+                          );
+                          if (!mounted || reset != true) return;
+                          setState(() {
+                            _password.clear();
+                            _error = null;
+                          });
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Нууц үг шинэчлэгдлээ. Шинэ нууц үгээрээ нэвтэрнэ үү.',
+                              ),
+                            ),
+                          );
+                        },
+                  child: const Text('Нууц үг мартсан?'),
+                ),
               const SizedBox(height: 15),
 
               Center(

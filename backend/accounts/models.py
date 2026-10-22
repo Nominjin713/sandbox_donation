@@ -13,6 +13,10 @@ class User(AbstractUser):
     verification_expires_at = models.DateTimeField(null=True, blank=True)
     verification_sent_at = models.DateTimeField(null=True, blank=True)
     verification_attempts = models.PositiveSmallIntegerField(default=0)
+    reset_digest = models.CharField(max_length=64, blank=True)
+    reset_expires_at = models.DateTimeField(null=True, blank=True)
+    reset_sent_at = models.DateTimeField(null=True, blank=True)
+    reset_attempts = models.PositiveSmallIntegerField(default=0)
 
 
 class AuthToken(models.Model):

@@ -16,6 +16,12 @@ Flutter defaults to the shared Render API. Domain-free Gmail delivery setup:
 
 Requires Python 3.12+ and Django. Registration requires email verification before login.
 
+Password recovery: `POST /auth/forgot-password` with `email`, then
+`POST /auth/reset-password` with `email`, `code`, and the new `password`.
+Codes expire after ten minutes, allow five attempts, and can be resent after
+60 seconds. Successful resets revoke all existing sessions. Run migrations
+before using these endpoints. Delivery uses the existing email configuration.
+
 ```powershell
 cd backend
 python -m venv .venv

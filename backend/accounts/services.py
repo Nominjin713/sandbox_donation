@@ -60,6 +60,43 @@ def token_digest(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def reset_code_digest(user, code):
+    return salted_hmac('password-reset', f'{user.pk}:{user.password}:{code}', algorithm='sha256').hexdigest()
+
+
+def request_password_reset(email):
+    with transaction.atomic():
+        user = User.objects.select_for_update().filter(email__iexact=email, is_active=True).first()
+        now = timezone.now()
+        if not user or (user.reset_sent_at and now - user.reset_sent_at < timedelta(seconds=60)):
+            return
+        code = f'{secrets.randbelow(1000000):06d}'
+        send_mail('Нууц үг сэргээх код', f'Таны нууц үг сэргээх код: {code}\nКод 10 минут хүчинтэй. Та хүсэлт гаргаагүй бол энэ имэйлийг үл тоомсорлоно уу.', settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+        user.reset_digest = reset_code_digest(user, code)
+        user.reset_expires_at = now + timedelta(minutes=10)
+        user.reset_sent_at = now
+        user.reset_attempts = 0
+        user.save(update_fields=['reset_digest', 'reset_expires_at', 'reset_sent_at', 'reset_attempts'])
+
+
+def reset_password(*, email, code, password):
+    with transaction.atomic():
+        user = User.objects.select_for_update().filter(email__iexact=email, is_active=True).first()
+        if not user or not user.reset_digest or not user.reset_expires_at or user.reset_expires_at <= timezone.now() or user.reset_attempts >= 5:
+            return False
+        user.reset_attempts += 1
+        user.save(update_fields=['reset_attempts'])
+        if not constant_time_compare(user.reset_digest, reset_code_digest(user, code)):
+            return False
+        validate_password(password, user)
+        user.set_password(password)
+        user.reset_digest = ''
+        user.reset_expires_at = None
+        user.save(update_fields=['password', 'reset_digest', 'reset_expires_at'])
+        AuthToken.objects.filter(user=user).delete()
+        return True
+
+
 def create_session(user):
     now = timezone.now()
     AuthToken.objects.filter(expires_at__lte=now).delete()

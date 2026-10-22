@@ -10,6 +10,7 @@ from .models import User
 from .authentication import get_session as session
 from django.db import transaction
 from .services import EmailAlreadyRegistered, VerificationRequired, register_user, login_user, send_verification, verify_email
+from .services import request_password_reset, reset_password
 
 
 def error(message, status=400):
@@ -59,6 +60,41 @@ def credentials(request):
 @endpoint('GET')
 def health(request):
     return JsonResponse({'status': 'ok'})
+
+
+@endpoint('POST', limited=True)
+def forgot_password(request):
+    try:
+        body = json.loads(request.body)
+        email = body.get('email')
+        if not isinstance(email, str) or len(email.strip()) > 254:
+            raise ValueError
+        validate_email(email.strip())
+    except (ValueError, AttributeError, UnicodeDecodeError, ValidationError, RequestDataTooBig):
+        return error('Зөв имэйл оруулна уу.')
+    try:
+        request_password_reset(email.strip().lower())
+    except (SMTPException, OSError):
+        logging.getLogger(__name__).exception('Password reset email delivery failed')
+        return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
+    return JsonResponse({'message': 'Бүртгэлтэй имэйл бол сэргээх код илгээгдэнэ. Имэйлээ шалгана уу.'})
+
+
+@endpoint('POST', limited=True)
+def reset_password_view(request):
+    try:
+        body, email, password = credentials(request)
+        code = body.get('code')
+        if not isinstance(code, str) or len(code) != 6 or not code.isascii() or not code.isdigit():
+            return error('6 оронтой код оруулна уу.')
+        success = reset_password(email=email, code=code, password=password)
+    except ValueError as exc:
+        return error(str(exc))
+    except ValidationError as exc:
+        return error(' '.join(exc.messages))
+    if not success:
+        return error('Код буруу эсвэл хугацаа дууссан байна. Шинэ код авна уу.')
+    return JsonResponse({'message': 'Нууц үг шинэчлэгдлээ. Шинэ нууц үгээрээ нэвтэрнэ үү.'})
 
 
 @endpoint('POST', limited=True)
