@@ -12,6 +12,51 @@ const Color darkBlue = Color(0xFF19345C);
 const Color backgroundBlue = Color(0xFFF4F8FF);
 const Color borderBlue = Color(0xFFE3EDFC);
 
+// ШИНЭ: ангилал бүрийн зураг, icon, өнгө
+class _CategoryStyle {
+  const _CategoryStyle(this.asset, this.icon, this.accent, this.pale);
+  final String asset;
+  final IconData icon;
+  final Color accent;
+  final Color pale;
+
+  static const _styles = <String, _CategoryStyle>{
+    'Байгаль орчин': _CategoryStyle(
+      'assets/images/environment.jpg',
+      Icons.park_rounded,
+      Color(0xFF35B779),
+      Color(0xFFE1F7E9),
+    ),
+    'Нийгмийн халамж': _CategoryStyle(
+      'assets/images/social.jpg',
+      Icons.volunteer_activism_rounded,
+      Color(0xFFFF7596),
+      Color(0xFFFFE8EE),
+    ),
+    'Цэвэр орчин': _CategoryStyle(
+      'assets/images/cleanup.jpg',
+      Icons.cleaning_services_rounded,
+      primaryBlue,
+      Color(0xFFE5EEFF),
+    ),
+    'Боловсрол': _CategoryStyle(
+      'assets/images/education.jpg',
+      Icons.menu_book_rounded,
+      Color(0xFF9676E8),
+      Color(0xFFEDE7FF),
+    ),
+  };
+
+  static const _other = _CategoryStyle(
+    'assets/images/other.jpg',
+    Icons.favorite_rounded,
+    primaryBlue,
+    Color(0xFFE5EEFF),
+  );
+
+  static _CategoryStyle of(String? category) => _styles[category] ?? _other;
+}
+
 class EventListPage extends StatefulWidget {
   const EventListPage({super.key, this.authService});
   final AuthService? authService;
@@ -368,16 +413,54 @@ class _EventListPageState extends State<EventListPage> {
                 ),
               )
             else
+              // ШИНЭ: дэлгэцийн өргөнөөс хамаарч 1, 2, 3 багана
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    return _EventCard(
-                      event: filtered[index],
-                      api: _api,
-                      onChanged: () => _load(),
+                sliver: SliverLayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.crossAxisExtent;
+                    final columns = width >= 1000 ? 3 : (width >= 600 ? 2 : 1);
+
+                    if (columns == 1) {
+                      // Босоо утас: нэг багана, жагсаалт
+                      return SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _EventCard(
+                              event: filtered[index],
+                              api: _api,
+                              onChanged: () => _load(),
+                            ),
+                          ),
+                          childCount: filtered.length,
+                        ),
+                      );
+                    }
+
+                    // Хэвтээ утас / tablet / компьютер: grid
+                    const spacing = 16.0;
+                    final tileWidth =
+                        (width - spacing * (columns - 1)) / columns;
+                    return SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        mainAxisSpacing: spacing,
+                        crossAxisSpacing: spacing,
+                        // зураг 16:9 + доорх мэдээллийн хэсэг
+                        mainAxisExtent: tileWidth * 9 / 16 + 250,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _EventCard(
+                          event: filtered[index],
+                          api: _api,
+                          onChanged: () => _load(),
+                          expand: true,
+                        ),
+                        childCount: filtered.length,
+                      ),
                     );
-                  }, childCount: filtered.length),
+                  },
                 ),
               ),
             if (_nextOffset != null && !_loading)
@@ -489,62 +572,111 @@ class _EventListPageState extends State<EventListPage> {
   }
 }
 
+// ШИНЭ: картын дээд хэсгийн зураг
+class _EventImage extends StatelessWidget {
+  const _EventImage({required this.style, required this.category});
+  final _CategoryStyle style;
+  final String category;
+
+  Widget _fallback() {
+    // Зураг олдохгүй бол өмнөх шиг өнгөт дэвсгэр + icon
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [style.pale, style.pale.withValues(alpha: 0.6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Icon(style.icon, color: style.accent, size: 56),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // BoxFit.cover: босоо ч, хэвтээ ч зураг сунахгүйгээр тайрагдана
+        Image.asset(
+          style.asset,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _fallback(),
+        ),
+        // Доод талд бага зэрэг сүүдэр
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Color(0x40000000)],
+              stops: [0.6, 1.0],
+            ),
+          ),
+        ),
+        // Ангиллын тэмдэг зураг дээр
+        if (category.isNotEmpty)
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(style.icon, color: style.accent, size: 13),
+                  const SizedBox(width: 5),
+                  Text(
+                    category,
+                    style: TextStyle(
+                      color: style.accent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _EventCard extends StatelessWidget {
   final Map<String, String> event;
   final AuthService api;
   final VoidCallback onChanged;
+  final bool expand; // ШИНЭ: grid дотор байгаа эсэх
 
   const _EventCard({
     required this.event,
     required this.api,
     required this.onChanged,
+    this.expand = false,
   });
 
-  Color get _accentColor {
-    switch (event['color']) {
-      case 'green':
-        return const Color(0xFF35B779);
-      case 'pink':
-        return const Color(0xFFFF7596);
-      case 'purple':
-        return const Color(0xFF9676E8);
-      default:
-        return primaryBlue;
-    }
-  }
-
-  Color get _paleColor {
-    switch (event['color']) {
-      case 'green':
-        return const Color(0xFFE1F7E9);
-      case 'pink':
-        return const Color(0xFFFFE8EE);
-      case 'purple':
-        return const Color(0xFFEDE7FF);
-      default:
-        return const Color(0xFFE5EEFF);
-    }
-  }
-
-  IconData get _eventIcon {
-    switch (event['icon']) {
-      case 'tree':
-        return Icons.park_rounded;
-      case 'heart':
-        return Icons.volunteer_activism_rounded;
-      case 'clean':
-        return Icons.cleaning_services_rounded;
-      case 'book':
-        return Icons.menu_book_rounded;
-      default:
-        return Icons.favorite_rounded;
-    }
+  // ШИНЭ: карт болон товч хоёулаа ижил байдлаар нээгдэнэ
+  Future<void> _openDetail(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventDetailPage(event: event, authService: api),
+      ),
+    );
+    onChanged();
   }
 
   @override
   Widget build(BuildContext context) {
+    final style = _CategoryStyle.of(event['category']);
+    final image = _EventImage(style: style, category: event['category'] ?? '');
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
@@ -562,179 +694,139 @@ class _EventCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(25),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EventDetailPage(event: event, authService: api),
-              ),
-            );
-            onChanged();
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          onTap: () => _openDetail(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Жагсаалтад 16:9, grid дотор үлдсэн зайг бүтэн эзэлнэ
+              if (expand)
+                Expanded(child: image)
+              else
+                AspectRatio(aspectRatio: 16 / 9, child: image),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 83,
-                      height: 91,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            _paleColor,
-                            _paleColor.withValues(alpha: 0.6),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(21),
-                      ),
-                      child: Icon(_eventIcon, color: _accentColor, size: 42),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _paleColor,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              event['category'] ?? '',
-                              style: TextStyle(
-                                color: _accentColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 9),
-                          Text(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
                             event['title'] ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: darkBlue,
-                              fontSize: 16,
+                              fontSize: 17,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 9),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.calendar_month_rounded,
-                                size: 15,
-                                color: Color(0xFF8295B2),
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  event['date'] ?? '',
-                                  style: const TextStyle(
-                                    color: Color(0xFF7184A2),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: Color(0xFF9AACCA),
-                      size: 16,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                const Divider(color: Color(0xFFEEF3FB), height: 1),
-                const SizedBox(height: 13),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      color: primaryBlue,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        event['location'] ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF6C7F9D),
-                          fontSize: 12,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.people_alt_rounded,
-                      color: primaryBlue,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${event['slots']} хүн',
-                      style: const TextStyle(
-                        color: darkBlue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EventDetailPage(event: event),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primaryBlue,
-                      side: const BorderSide(color: borderBlue),
-                      backgroundColor: const Color(0xFFF8FBFF),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Дэлгэрэнгүй үзэх',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
+                        const SizedBox(width: 8),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 3),
+                          child: Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: Color(0xFF9AACCA),
+                            size: 16,
                           ),
                         ),
-                        SizedBox(width: 7),
-                        Icon(Icons.arrow_forward_rounded, size: 17),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_month_rounded,
+                          size: 15,
+                          color: Color(0xFF8295B2),
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            event['date'] ?? '',
+                            style: const TextStyle(
+                              color: Color(0xFF7184A2),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(color: Color(0xFFEEF3FB), height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          color: primaryBlue,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            event['location'] ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF6C7F9D),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.people_alt_rounded,
+                          color: primaryBlue,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${event['slots']} хүн',
+                          style: const TextStyle(
+                            color: darkBlue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => _openDetail(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primaryBlue,
+                          side: const BorderSide(color: borderBlue),
+                          backgroundColor: const Color(0xFFF8FBFF),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Дэлгэрэнгүй үзэх',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                            SizedBox(width: 7),
+                            Icon(Icons.arrow_forward_rounded, size: 17),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

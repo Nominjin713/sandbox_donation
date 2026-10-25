@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'auth_service.dart';
 
@@ -30,12 +32,26 @@ class EventRecord {
       endsAt = DateTime.parse(data['duusah_ognoo'] as String).toLocal(),
       capacity = data['oroltsohchdiin_too'] as int,
       participantCount = data['participant_count'] as int? ?? 0,
-      isJoined = data['is_joined'] as bool? ?? false;
+      isJoined = data['is_joined'] as bool? ?? false,
+      // ШИНЭ: зургийн URL (байхгүй бол null)
+      imageUrl = _cleanUrl(data['zurag']);
 
   final String id, title, description, organization, category, location, status;
   final DateTime startsAt, endsAt;
   final int capacity, participantCount;
   final bool isJoined;
+
+  // ШИНЭ
+  final String? imageUrl;
+
+  // ШИНЭ: зураг байгаа эсэхийг шалгах туслах getter
+  bool get hasImage => imageUrl != null;
+
+  static String? _cleanUrl(Object? value) {
+    if (value is! String) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
 
   static String dateLabel(DateTime date) =>
       '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
@@ -52,6 +68,8 @@ class EventRecord {
     'slots': '$capacity',
     'participants': '$participantCount',
     'isJoined': '$isJoined',
+    // ШИНЭ: зураггүй бол хоосон мөр
+    'image': imageUrl ?? '',
   };
 }
 
@@ -70,6 +88,9 @@ class EventPage {
 class EventService {
   EventService(this.api);
   final AuthService api;
+
+  // ШИНЭ: зургийн дээд хэмжээ (5 MB)
+  static const maxImageBytes = 5 * 1024 * 1024;
 
   T _read<T>(T Function() parse) {
     try {
@@ -116,6 +137,28 @@ class EventService {
     );
   }
 
+  /// ШИНЭ: зургийг backend рүү илгээгээд URL-ыг нь буцаана.
+  /// Web болон утсан дээр хоёуланд нь ажиллахын тулд bytes-ийг
+  /// base64 болгож JSON-оор илгээнэ (dart:io File хэрэглэхгүй).
+  Future<String> uploadImage(Uint8List bytes, String filename) async {
+    if (bytes.isEmpty) {
+      throw const AuthException('Зураг хоосон байна.');
+    }
+    if (bytes.length > maxImageBytes) {
+      throw const AuthException('Зургийн хэмжээ 5MB-аас хэтрэхгүй байх ёстой.');
+    }
+    final data = await api.request(
+      '/events/upload-image',
+      body: {'filename': filename, 'data': base64Encode(bytes)},
+      post: true,
+    );
+    return _read<String>(() {
+      final url = (data['url'] as String).trim();
+      if (url.isEmpty) throw const FormatException();
+      return url;
+    });
+  }
+
   Future<EventRecord> create({
     required String id,
     required String title,
@@ -126,7 +169,9 @@ class EventService {
     required DateTime startsAt,
     required DateTime endsAt,
     required int capacity,
+    String? imageUrl, // ШИНЭ: заавал биш
   }) async {
+    final cleanImage = EventRecord._cleanUrl(imageUrl);
     final body = <String, dynamic>{
       'argahemjeeniidugaar': id,
       'garchig': title.trim(),
@@ -137,6 +182,7 @@ class EventService {
       'ehleh_ognoo': startsAt.toUtc().toIso8601String(),
       'duusah_ognoo': endsAt.toUtc().toIso8601String(),
       'oroltsohchdiin_too': capacity,
+      if (cleanImage != null) 'zurag': cleanImage, // ШИНЭ
     };
     try {
       final data = await api.request('/events/create', body: body, post: true);
@@ -153,7 +199,9 @@ class EventService {
           existing.location != location.trim() ||
           !existing.startsAt.isAtSameMomentAs(startsAt) ||
           !existing.endsAt.isAtSameMomentAs(endsAt) ||
-          existing.capacity != capacity) {
+          existing.capacity != capacity ||
+          existing.imageUrl != cleanImage) {
+        // ШИНЭ: зураг ч бас таарах ёстой
         rethrow;
       }
       return existing;
