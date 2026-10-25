@@ -201,6 +201,19 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'test',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+
             // HERO SECTION
             SliverToBoxAdapter(
               child: Padding(
