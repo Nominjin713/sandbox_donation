@@ -6,12 +6,13 @@ import 'package:image_picker/image_picker.dart';
 
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
+import '../theme/app_theme.dart';
 import 'auth_page.dart';
 
-const Color primaryBlue = Color(0xFF4389F5);
-const Color darkBlue = Color(0xFF19345C);
-const Color backgroundBlue = Color(0xFFF2F7FF);
-const Color borderBlue = Color(0xFFDCE8FF);
+const Color primaryBlue = AppColors.primary;
+const Color darkBlue = AppColors.ink;
+const Color backgroundBlue = AppColors.background;
+const Color borderBlue = AppColors.border;
 
 class CreateEventPage extends StatefulWidget {
   const CreateEventPage({
@@ -422,7 +423,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   width: 62,
                   height: 62,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5F0FF),
+                    color: AppColors.softGreen,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
@@ -508,7 +509,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFE0EDFF), Color(0xFFF2F7FF), Color(0xFFE5F5FF)],
+          colors: [AppColors.softGreen, AppColors.background, AppColors.pale],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white, width: 2),
@@ -722,8 +723,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   ),
                   decoration: BoxDecoration(
                     color: selected
-                        ? const Color(0xFFE5F0FF)
-                        : const Color(0xFFFAFCFF),
+                        ? AppColors.softGreen
+                        : AppColors.surface,
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
                       color: selected ? primaryBlue : borderBlue,
@@ -824,7 +825,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       height: 59,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF68A6FF), Color(0xFF4389F5), Color(0xFF326EF0)],
+          colors: [AppColors.forest, AppColors.primary],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [

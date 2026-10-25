@@ -5,27 +5,27 @@ import 'dart:ui' show ImageFilter;
 
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
+import '../theme/app_theme.dart';
 
 import 'event_detail_page.dart';
 
-const Color primaryBlue = Color(0xFF4389F5);
-const Color darkBlue = Color(0xFF19345C);
-const Color backgroundBlue = Color(0xFFF4F8FF);
-const Color borderBlue = Color(0xFFE3EDFC);
-const Color mutedText = Color(0xFF6C7F9D);
-const Color joinedGreen = Color(0xFF2E9E6A);
+const Color primaryBlue = AppColors.primary;
+const Color darkBlue = AppColors.ink;
+const Color backgroundBlue = AppColors.background;
+const Color borderBlue = AppColors.border;
+const Color mutedText = AppColors.muted;
+const Color joinedGreen = AppColors.primary;
 
 // ШИНЭ: хуудасны цэнхэр уусгалттай дэвсгэр (дээрээс доош цайрна)
 const LinearGradient pageGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF1E6FE8), // цэнхэр
-    Color(0xFF2FB4FF), // тод цэнхэр
-    Color(0xFF6FA4FF), // зөөлөн цэнхэр
-    Color(0xFF8E8CFF), // хөх (индиго)
+    AppColors.background,
+    Color(0xFFEEF3EA),
+    AppColors.background,
   ],
-  stops: [0.0, 0.35, 0.7, 1.0],
+  stops: [0.0, 0.5, 1.0],
 );
 
 // Ангилал бүрийн зураг, icon, өнгө
@@ -53,7 +53,7 @@ class _CategoryStyle {
       'assets/images/cleanup.jpg',
       Icons.cleaning_services_rounded,
       primaryBlue,
-      Color(0xFFE5EEFF),
+      AppColors.softGreen,
     ),
     'Боловсрол': _CategoryStyle(
       'assets/images/education.jpg',
@@ -67,7 +67,7 @@ class _CategoryStyle {
     'assets/images/other.jpg',
     Icons.favorite_rounded,
     primaryBlue,
-    Color(0xFFE5EEFF),
+    AppColors.softGreen,
   );
 
   static _CategoryStyle of(String? category) => _styles[category] ?? _other;
@@ -219,7 +219,7 @@ class _EventListPageState extends State<EventListPage> {
             onPressed: () => Navigator.pop(context),
             style: IconButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: primaryBlue,
+              foregroundColor: AppColors.forest,
               shape: const CircleBorder(),
             ),
             icon: const Icon(Icons.arrow_back_rounded),
@@ -228,7 +228,7 @@ class _EventListPageState extends State<EventListPage> {
         title: const Text(
           'Үйл ажиллагаанууд',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.forest,
             fontSize: 19,
             fontWeight: FontWeight.w800,
           ),
@@ -238,7 +238,7 @@ class _EventListPageState extends State<EventListPage> {
           IconButton(
             tooltip: 'Шинэчлэх',
             onPressed: _loading ? null : () => _load(),
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
           ),
         ],
       ),
@@ -272,7 +272,7 @@ class _EventListPageState extends State<EventListPage> {
                         child: Text(
                           'Танд зориулсан боломжууд',
                           style: TextStyle(
-                            color: darkBlue,
+                            color: AppColors.forest,
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                           ),
@@ -281,7 +281,7 @@ class _EventListPageState extends State<EventListPage> {
                       Text(
                         '$_total үйл ажиллагаа',
                         style: const TextStyle(
-                          color: darkBlue,
+                          color: mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -631,7 +631,7 @@ class _EventListPageState extends State<EventListPage> {
             width: 84,
             height: 84,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5F0FF),
+              color: AppColors.softGreen,
               borderRadius: BorderRadius.circular(28),
             ),
             child: Icon(icon, color: primaryBlue, size: 40),
@@ -692,7 +692,7 @@ class _PinnedBar extends SliverPersistentHeaderDelegate {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: ColoredBox(
-          color: Colors.white.withValues(alpha: 0.28),
+          color: Colors.white.withValues(alpha: 0.88),
           child: child,
         ),
       ),
@@ -796,7 +796,7 @@ class _EventCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: const Color(0xFFEEF3FB),
+                      backgroundColor: AppColors.pale,
                       color: isFull ? const Color(0xFFE5A23B) : style.accent,
                     ),
                   ),
@@ -1020,7 +1020,7 @@ class _SkeletonCard extends StatelessWidget {
     width: width,
     height: height,
     decoration: BoxDecoration(
-      color: const Color(0xFFEEF3FB),
+      color: AppColors.pale,
       borderRadius: BorderRadius.circular(6),
     ),
   );
@@ -1039,7 +1039,7 @@ class _SkeletonCard extends StatelessWidget {
         children: [
           const AspectRatio(
             aspectRatio: 16 / 10,
-            child: ColoredBox(color: Color(0xFFE9EFF8)),
+            child: ColoredBox(color: AppColors.pale),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
