@@ -737,6 +737,7 @@ class _EventCard extends StatelessWidget {
     final progress = slots == 0 ? 0.0 : (joined / slots).clamp(0.0, 1.0);
 
     final image = _CardImage(
+      imageUrl: event['image'] ?? '', // ШИНЭ: эвентийн өөрийн зураг
       style: style,
       category: event['category'] ?? '',
       day: date.day,
@@ -858,15 +859,24 @@ class _InfoRow extends StatelessWidget {
 // Картын зураг: ангилал, огноо, бүртгүүлсэн тэмдэг
 class _CardImage extends StatelessWidget {
   const _CardImage({
+    this.imageUrl = '',
     required this.style,
     required this.category,
     required this.day,
     required this.month,
     required this.isJoined,
   });
+  final String imageUrl;
   final _CategoryStyle style;
   final String category, day, month;
   final bool isJoined;
+
+  // Ангиллын зураг (эвент зураггүй үед)
+  Widget _categoryImage() => Image.asset(
+    style.asset,
+    fit: BoxFit.cover,
+    errorBuilder: (context, error, stackTrace) => _fallback(),
+  );
 
   Widget _fallback() {
     return ColoredBox(
@@ -880,12 +890,20 @@ class _CardImage extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
+        // ШИНЭ: эвент өөрийн зурагтай бол түүнийг, үгүй бол ангиллын зургийг
         // BoxFit.cover: босоо ч, хэвтээ ч зураг сунахгүйгээр тайрагдана
-        Image.asset(
-          style.asset,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _fallback(),
-        ),
+        if (imageUrl.isNotEmpty)
+          Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            // Web дээр CORS-оос болж ачаалагдахгүй бол энгийн <img>-ээр харуулна
+            webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+            loadingBuilder: (context, child, progress) =>
+                progress == null ? child : ColoredBox(color: style.pale),
+            errorBuilder: (context, error, stackTrace) => _categoryImage(),
+          )
+        else
+          _categoryImage(),
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(

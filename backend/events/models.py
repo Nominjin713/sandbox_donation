@@ -53,6 +53,8 @@ class Event(models.Model):
     duusah_ognoo = models.DateTimeField(verbose_name='Дуусах огноо')
     oroltsohchdiin_too = models.PositiveIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(2147483647)], verbose_name='Оролцогчдын тоо')
+    # ШИНЭ: зургийн URL. Хуучин эвентүүд хоосон ('') утгатай үлдэнэ.
+    zurag = models.CharField(max_length=500, blank=True, default='', verbose_name='Зураг')
 
     def clean(self):
         super().clean()

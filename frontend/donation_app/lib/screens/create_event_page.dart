@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
@@ -47,6 +50,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
   DateTime? _selectedDate;
   bool _isPublishing = false;
 
+  // ШИНЭ: сонгосон зураг
+  Uint8List? _imageBytes;
+  String? _imageName;
+  // Нэг удаа байршуулсан бол дахин нийтлэхэд дахин илгээхгүй
+  String? _uploadedImageUrl;
+
   @override
   void dispose() {
     _organizationController.dispose();
@@ -57,6 +66,46 @@ class _CreateEventPageState extends State<CreateEventPage> {
     _locationController.dispose();
     _slotsController.dispose();
     super.dispose();
+  }
+
+  // ШИНЭ: галерейгаас зураг сонгох
+  Future<void> _pickImage() async {
+    if (_isPublishing) return;
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        // том зургийг багасгаж, хурдан илгээгдэхээр болгоно
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 82,
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      if (bytes.length > EventService.maxImageBytes) {
+        setState(() => _error = 'Зургийн хэмжээ 5MB-аас ихгүй байх ёстой.');
+        return;
+      }
+      setState(() {
+        _imageBytes = bytes;
+        _imageName = picked.name;
+        _uploadedImageUrl = null;
+        _error = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Зураг сонгож чадсангүй. Дахин оролдоно уу.');
+      }
+    }
+  }
+
+  void _removeImage() {
+    if (_isPublishing) return;
+    setState(() {
+      _imageBytes = null;
+      _imageName = null;
+      _uploadedImageUrl = null;
+    });
   }
 
   Future<void> _chooseDate({bool end = false}) async {
@@ -145,6 +194,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   children: [
                     _buildBanner(),
                     const SizedBox(height: 24),
+
+                    // ШИНЭ: зураг
+                    _buildLabel('Үйл ажиллагааны зураг', required: false),
+                    const SizedBox(height: 9),
+                    _buildImagePicker(),
+                    const SizedBox(height: 22),
 
                     _buildLabel('Зохион байгуулагч / байгууллага'),
                     const SizedBox(height: 9),
@@ -317,6 +372,107 @@ class _CreateEventPageState extends State<CreateEventPage> {
     );
   }
 
+  // ШИНЭ: зураг сонгох / харах хэсэг
+  Widget _buildImagePicker() {
+    final bytes = _imageBytes;
+
+    if (bytes == null) {
+      return Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: borderBlue, width: 1.4),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: _isPublishing ? null : _pickImage,
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5F0FF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.add_photo_alternate_rounded,
+                    color: primaryBlue,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Зураг нэмэх',
+                  style: TextStyle(
+                    color: darkBlue,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'JPG эсвэл PNG, 5MB хүртэл',
+                  style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: AspectRatio(
+        // жагсаалтын картын зурагтай ижил харьцаа
+        aspectRatio: 16 / 10,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.memory(bytes, fit: BoxFit.cover),
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Row(
+                children: [
+                  FilledButton.icon(
+                    onPressed: _isPublishing ? null : _pickImage,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: darkBlue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    icon: const Icon(Icons.photo_library_rounded, size: 18),
+                    label: const Text(
+                      'Солих',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    tooltip: 'Зургийг устгах',
+                    onPressed: _isPublishing ? null : _removeImage,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFFE5484D),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBanner() {
     return Container(
       width: double.infinity,
@@ -391,7 +547,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  // ШИНЭ: required=false бол улаан од харагдахгүй
+  Widget _buildLabel(String text, {bool required = true}) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Row(
@@ -405,13 +562,19 @@ class _CreateEventPageState extends State<CreateEventPage> {
             ),
           ),
           const SizedBox(width: 4),
-          const Text(
-            '*',
-            style: TextStyle(
-              color: Color(0xFFFF6B83),
-              fontWeight: FontWeight.bold,
+          if (required)
+            const Text(
+              '*',
+              style: TextStyle(
+                color: Color(0xFFFF6B83),
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          else
+            const Text(
+              '(заавал биш)',
+              style: TextStyle(color: Color(0xFF94A5C0), fontSize: 12),
             ),
-          ),
         ],
       ),
     );
@@ -690,6 +853,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
       _error = null;
     });
     try {
+      // ШИНЭ: эхлээд зургийг байршуулж, URL-ыг нь авна
+      var imageUrl = _uploadedImageUrl;
+      final bytes = _imageBytes;
+      if (bytes != null && imageUrl == null) {
+        imageUrl = await _events.uploadImage(bytes, _imageName ?? 'image.jpg');
+        _uploadedImageUrl = imageUrl;
+      }
+
       final event = await _events.create(
         id: _eventId,
         title: _titleController.text,
@@ -700,6 +871,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         startsAt: _selectedDate!,
         endsAt: _selectedEndDate!,
         capacity: int.parse(_slotsController.text.trim()),
+        imageUrl: imageUrl, // ШИНЭ
       );
       if (!mounted) return;
       Navigator.of(context).pop(event);
