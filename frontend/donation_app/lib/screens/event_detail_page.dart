@@ -3,12 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
-import '../theme/app_theme.dart';
 import 'auth_page.dart';
 import 'create_event_page.dart';
 
-const primaryBlue = AppColors.primary;
-const darkBlue = AppColors.ink;
+const primaryBlue = Color(0xFF4389F5);
+const darkBlue = Color(0xFF19345C);
 
 class EventDetailPage extends StatefulWidget {
   const EventDetailPage({super.key, required this.event, this.authService});
@@ -152,7 +151,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         (event.status != 'open' || !event.endsAt.isAfter(DateTime.now()));
     final full = event != null && event.participantCount >= event.capacity;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF4F8FF),
       appBar: AppBar(
         title: const Text('Үйл ажиллагааны дэлгэрэнгүй'),
         actions: [
@@ -205,32 +204,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 ],
                 if (event != null) ...[
                   const SizedBox(height: 16),
-                  if (event.imageUrl != null) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Image.network(
-                          event.imageUrl!,
-                          fit: BoxFit.cover,
-                          webHtmlElementStrategy:
-                              WebHtmlElementStrategy.fallback,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const ColoredBox(
-                                color: AppColors.softGreen,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.volunteer_activism_rounded,
-                                    color: AppColors.primary,
-                                    size: 44,
-                                  ),
-                                ),
-                              ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                  ],
                   _card(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,12 +356,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Widget _card(Widget child) => Card(
-    color: AppColors.surface,
-    elevation: 0,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(22),
-      side: const BorderSide(color: AppColors.border),
-    ),
+    color: Colors.white,
     child: Padding(padding: const EdgeInsets.all(22), child: child),
   );
 

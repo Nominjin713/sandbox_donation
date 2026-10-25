@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
 import 'auth_style.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -285,8 +284,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [
-                                  AppColors.forest,
-                                  AppColors.primary,
+                                  Color(0xFF68A6FF),
+                                  authBlue,
+                                  Color(0xFF326EF0),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(18),
@@ -392,7 +392,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [AppColors.softGreen, AppColors.background, AppColors.pale],
+        colors: [Color(0xFFE0EDFF), Color(0xFFF0F6FF), Color(0xFFE5F5FF)],
       ),
       borderRadius: BorderRadius.circular(29),
       border: Border.all(color: Colors.white, width: 2),
@@ -509,7 +509,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     margin: const EdgeInsets.only(top: 16),
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(
-      color: error ? const Color(0xFFFFF2F3) : AppColors.softGreen,
+      color: error ? const Color(0xFFFFF2F3) : const Color(0xFFF0F5FF),
       borderRadius: BorderRadius.circular(15),
     ),
     child: Row(
@@ -540,7 +540,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     hintStyle: const TextStyle(color: Color(0xFF9AAAC2), fontSize: 12),
     prefixIcon: Icon(icon, color: authBlue, size: 21),
     filled: true,
-    fillColor: AppColors.surface,
+    fillColor: const Color(0xFFFAFCFF),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(17),

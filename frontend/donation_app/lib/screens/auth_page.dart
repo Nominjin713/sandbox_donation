@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
 import 'forgot_password_page.dart';
 import 'auth_style.dart';
 
@@ -194,7 +193,7 @@ class _AuthPageState extends State<AuthPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.softGreen, AppColors.background, AppColors.pale],
+          colors: [Color(0xFFE0EDFF), Color(0xFFF0F6FF), Color(0xFFE5F5FF)],
         ),
         borderRadius: BorderRadius.circular(29),
         border: Border.all(color: Colors.white, width: 2),
@@ -627,7 +626,7 @@ class _AuthPageState extends State<AuthPage> {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: AppColors.softGreen,
+        color: const Color(0xFFF0F5FF),
         borderRadius: BorderRadius.circular(17),
       ),
       child: Row(
@@ -726,7 +725,7 @@ class _AuthPageState extends State<AuthPage> {
       hintStyle: const TextStyle(color: Color(0xFF9AAAC2), fontSize: 12),
       prefixIcon: Icon(icon, color: authBlue, size: 21),
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: const Color(0xFFFAFCFF),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(17),
@@ -757,7 +756,7 @@ class _AuthPageState extends State<AuthPage> {
       height: 56,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.forest, AppColors.primary],
+          colors: [Color(0xFF68A6FF), Color(0xFF4389F5), Color(0xFF326EF0)],
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [

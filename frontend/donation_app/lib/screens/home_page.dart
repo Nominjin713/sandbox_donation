@@ -5,14 +5,13 @@ import 'event_list_page.dart';
 import 'create_event_page.dart';
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
-import '../theme/app_theme.dart';
 import 'event_detail_page.dart';
 
-const Color primaryBlue = AppColors.primary;
-const Color darkBlue = AppColors.ink;
-const Color lightBlue = AppColors.softGreen;
-const Color backgroundBlue = AppColors.background;
-const Color softBorder = AppColors.border;
+const Color primaryBlue = Color(0xFF4389F5);
+const Color darkBlue = Color(0xFF19345C);
+const Color lightBlue = Color(0xFFEAF3FF);
+const Color backgroundBlue = Color(0xFFF7FAFF);
+const Color softBorder = Color(0xFFE5EEFC);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.authService});
@@ -142,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                       height: 46,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [AppColors.forest, AppColors.primary],
+                          colors: [Color(0xFF68ABFF), primaryBlue],
                         ),
                         borderRadius: BorderRadius.circular(17),
                       ),
@@ -154,27 +153,14 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(width: 10),
                     const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Volunteer Hub',
-                            style: TextStyle(
-                              color: darkBlue,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          Text(
-                            'Сайн үйлсэд нэгдье',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Volunteer Hub',
+                        style: TextStyle(
+                          color: darkBlue,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
                       ),
                     ),
                     if (_session != null) ...[
@@ -223,16 +209,17 @@ class _HomePageState extends State<HomePage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(25),
                   decoration: BoxDecoration(
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/vol.jpg'),
-                      fit: BoxFit.cover,
-                      colorFilter: ColorFilter.mode(
-                        Color(0xA8153D31),
-                        BlendMode.darken,
-                      ),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFE4F0FF),
+                        Color(0xFFF0F6FF),
+                        Color(0xFFE6F8FF),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,19 +230,15 @@ class _HomePageState extends State<HomePage> {
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.16),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.24),
-                          ),
+                          color: Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: const Text(
-                          'САЙН ҮЙЛСИЙН НЭГДЭЛ',
+                          '💙 Сайн үйлсийн нэгдэл',
                           style: TextStyle(
-                            color: AppColors.accent,
+                            color: primaryBlue,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
                           ),
                         ),
                       ),
@@ -267,14 +250,14 @@ class _HomePageState extends State<HomePage> {
                           height: 1.2,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -1,
-                          color: Colors.white,
+                          color: darkBlue,
                         ),
                       ),
                       const SizedBox(height: 13),
-                      Text(
+                      const Text(
                         'Бусдад тусалж, нийгэмдээ эерэг\nөөрчлөлтийг хамтдаа бүтээцгээе.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.86),
+                          color: Color(0xFF5D7191),
                           fontSize: 14,
                           height: 1.7,
                         ),
@@ -283,8 +266,8 @@ class _HomePageState extends State<HomePage> {
                       FilledButton.icon(
                         onPressed: _openEvents,
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: AppColors.forest,
+                          backgroundColor: primaryBlue,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
                             vertical: 15,
@@ -297,6 +280,23 @@ class _HomePageState extends State<HomePage> {
                         label: const Text(
                           'Үйл ажиллагаа үзэх',
                           style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          width: 145,
+                          height: 105,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          child: const Icon(
+                            Icons.diversity_3_rounded,
+                            color: primaryBlue,
+                            size: 76,
+                          ),
                         ),
                       ),
                     ],
@@ -329,7 +329,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.event_available_rounded,
                         value: '35+',
                         label: 'Үйл ажиллагаа',
-                        color: AppColors.softGreen,
+                        color: Color(0xFFE3EEFF),
                         iconColor: primaryBlue,
                       ),
                     ),
@@ -339,8 +339,8 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.volunteer_activism_rounded,
                         value: '500+',
                         label: 'Сайн үйлс',
-                        color: const Color(0xFFE7F2E6),
-                        iconColor: AppColors.primary,
+                        color: Color(0xFFE1F8EB),
+                        iconColor: Color(0xFF35B779),
                       ),
                     ),
                   ],
@@ -382,7 +382,7 @@ class _HomePageState extends State<HomePage> {
                     _CategoryCard(
                       title: 'Байгаль\nорчин',
                       icon: Icons.eco_rounded,
-                      color: AppColors.softGreen,
+                      color: Color(0xFFE0F7E9),
                       iconColor: Color(0xFF35B779),
                     ),
                     _CategoryCard(
@@ -557,14 +557,12 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.all(23),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.forest, AppColors.primary],
+                      colors: [Color(0xFF4389F5), Color(0xFF76B5FF)],
                     ),
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.forest.withValues(alpha: 0.16),
+                        color: primaryBlue.withValues(alpha: 0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -588,11 +586,11 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 9),
-                      Text(
+                      const Text(
                         'Өөрийн санаачилсан сайн дурын ажлаа '
                         'бусадтай хуваалцаарай.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.86),
+                          color: Color(0xFFF0F6FF),
                           fontSize: 14,
                           height: 1.6,
                         ),
@@ -603,8 +601,8 @@ class _HomePageState extends State<HomePage> {
                         child: FilledButton.icon(
                           onPressed: _openCreate,
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: AppColors.forest,
+                            backgroundColor: Colors.white,
+                            foregroundColor: primaryBlue,
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(17),
@@ -767,7 +765,6 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = (event['image'] as String?) ?? '';
     return Container(
       margin: const EdgeInsets.only(bottom: 13),
       padding: const EdgeInsets.all(13),
@@ -788,27 +785,15 @@ class _EventCard extends StatelessWidget {
           Container(
             width: 76,
             height: 83,
-            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: event['color'] as Color,
               borderRadius: BorderRadius.circular(19),
             ),
-            child: imageUrl.isEmpty
-                ? Icon(
-                    event['icon'] as IconData,
-                    color: primaryBlue,
-                    size: 38,
-                  )
-                : Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      event['icon'] as IconData,
-                      color: primaryBlue,
-                      size: 38,
-                    ),
-                  ),
+            child: Icon(
+              event['icon'] as IconData,
+              color: primaryBlue,
+              size: 38,
+            ),
           ),
           const SizedBox(width: 13),
           Expanded(
