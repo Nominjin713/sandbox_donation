@@ -43,7 +43,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     'Нийгмийн халамж',
     'Боловсрол',
     'Цэвэр орчин',
-    'Буса',
+    'Бусаkk',
   ];
 
   String _category = 'Байгаль орчин';
