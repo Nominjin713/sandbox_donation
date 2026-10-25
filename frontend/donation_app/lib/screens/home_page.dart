@@ -271,7 +271,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 13),
-                      const Text(
+                      Text(
                         'Бусдад тусалж, нийгэмдээ эерэг\nөөрчлөлтийг хамтдаа бүтээцгээе.',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.86),
@@ -588,7 +588,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 9),
-                      const Text(
+                      Text(
                         'Өөрийн санаачилсан сайн дурын ажлаа '
                         'бусадтай хуваалцаарай.',
                         style: TextStyle(
