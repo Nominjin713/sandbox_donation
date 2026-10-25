@@ -274,7 +274,7 @@ class _HomePageState extends State<HomePage> {
                       const Text(
                         'Бусдад тусалж, нийгэмдээ эерэг\nөөрчлөлтийг хамтдаа бүтээцгээе.',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.86),
+                          color: Colors.white.withOpacity(0.86),
                           fontSize: 14,
                           height: 1.7,
                         ),
@@ -592,7 +592,7 @@ class _HomePageState extends State<HomePage> {
                         'Өөрийн санаачилсан сайн дурын ажлаа '
                         'бусадтай хуваалцаарай.',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.86),
+                          color: Colors.white.withOpacity(0.86),
                           fontSize: 14,
                           height: 1.6,
                         ),
