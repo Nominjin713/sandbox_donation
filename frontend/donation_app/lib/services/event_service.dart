@@ -33,13 +33,14 @@ class EventRecord {
       capacity = data['oroltsohchdiin_too'] as int,
       participantCount = data['participant_count'] as int? ?? 0,
       isJoined = data['is_joined'] as bool? ?? false,
+      isOwner = data['is_owner'] as bool? ?? false,
       // ШИНЭ: зургийн URL (байхгүй бол null)
       imageUrl = _cleanUrl(data['zurag']);
 
   final String id, title, description, organization, category, location, status;
   final DateTime startsAt, endsAt;
   final int capacity, participantCount;
-  final bool isJoined;
+  final bool isJoined, isOwner;
 
   // ШИНЭ
   final String? imageUrl;
@@ -206,6 +207,45 @@ class EventService {
       }
       return existing;
     }
+  }
+
+  Future<EventRecord> update({
+    required String id,
+    required String title,
+    required String description,
+    required String organization,
+    required String category,
+    required String location,
+    required DateTime startsAt,
+    required DateTime endsAt,
+    required int capacity,
+    String? imageUrl,
+  }) async {
+    final data = await api.request(
+      '/events/${Uri.encodeComponent(id)}/edit',
+      body: {
+        'baiguullagiindugaar': organization.trim(),
+        'garchig': title.trim(),
+        'tailbar': description.trim(),
+        'angilaliindugaar': category,
+        'bairshil': location.trim(),
+        'ehleh_ognoo': startsAt.toUtc().toIso8601String(),
+        'duusah_ognoo': endsAt.toUtc().toIso8601String(),
+        'oroltsohchdiin_too': capacity,
+        'zurag': imageUrl ?? '',
+      },
+      post: true,
+    );
+    return _read<EventRecord>(
+      () => EventRecord.fromJson(data['event'] as Map<String, dynamic>),
+    );
+  }
+
+  Future<void> delete(String id) async {
+    await api.request(
+      '/events/${Uri.encodeComponent(id)}/delete',
+      post: true,
+    );
   }
 
   Future<EventRecord> participate(String id, {bool cancel = false}) async {
