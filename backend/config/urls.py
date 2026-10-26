@@ -1,6 +1,8 @@
 from django.urls import path
 from accounts import views
 from django.urls import path, include
+from django.conf import settings                    # ШИНЭ
+from django.conf.urls.static import static          # ШИНЭ
 
 
 urlpatterns = [
@@ -15,3 +17,5 @@ urlpatterns = [
     path('auth/resend-verification', views.resend_verification),
     path("events/", include("events.urls")),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # ШИНЭ

@@ -31,7 +31,9 @@ TIME_ZONE = 'Asia/Ulaanbaatar'
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-DATA_UPLOAD_MAX_MEMORY_SIZE = 16384
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # ЗАССАН: 16KB байсныг 10MB болгов
+MEDIA_URL = '/media/'                           # ШИНЭ
+MEDIA_ROOT = BASE_DIR / 'media'                 # ШИНЭ
 SECURE_CONTENT_TYPE_NOSNIFF = True
 email_config_path = BASE_DIR / 'email.local.json'
 email_config = json.loads(email_config_path.read_text(encoding='utf-8')) if email_config_path.exists() else {}
