@@ -3,7 +3,12 @@ from . import views
 
 urlpatterns = [
     path('create', views.create, name='event_create'),
+<<<<<<< HEAD
     path('upload-image', views.upload_image, name='event_upload_image'),  # ← ШИНЭ
+=======
+    path('<str:event_id>/edit', views.edit, name='event_edit'),
+    path('<str:event_id>/delete', views.delete, name='event_delete'),
+>>>>>>> 5834db6f9c13f7f49e6b37ecf8d1923b7523a2ea
     path('<str:event_id>/join', views.participation, name='event_join'),
     path('<str:event_id>/leave', views.participation, {'cancel': True}, name='event_leave'),
     path('<str:event_id>/', views.detail, name='event_detail'),

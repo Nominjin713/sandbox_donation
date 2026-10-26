@@ -10,6 +10,7 @@ from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.db.models import Count, Exists, OuterRef, Value, BooleanField, Q
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from accounts.authentication import get_session
 
@@ -36,11 +37,15 @@ def event_data(event, user=None):
     data['is_joined'] = getattr(event, 'is_joined', None)
     if data['is_joined'] is None:
         data['is_joined'] = bool(user and event.registrations.filter(user=user, status_id='registered').exists())
+    data['is_owner'] = bool(
+        user and event.baiguullagiindugaar.owner_id == user.pk
+    )
     return data
 
 
-def event_query(request):
-    token = get_session(request)
+def event_query(request, token=None):
+    if token is None:
+        token = get_session(request)
     joined = Exists(EventRegistration.objects.filter(event=OuterRef('pk'), user=token.user, status_id='registered')) if token else Value(False, output_field=BooleanField())
     return Event.objects.annotate(participant_count=Count('registrations', filter=Q(registrations__status_id='registered')), is_joined=joined)
 
@@ -137,7 +142,99 @@ def create(request):
     if image:
         event.zurag = image
         event.save(update_fields=[IMAGE_FIELD])
-    return JsonResponse({'message': 'Үйл ажиллагаа амжилттай үүсгэлээ.', 'event': event_data(event)}, status=201)
+    return JsonResponse({'message': 'Үйл ажиллагаа амжилттай үүсгэлээ.',
+                         'event': event_data(event, token.user)}, status=201)
+
+
+def edit(request, event_id):
+    if request.method != 'POST':
+        response = JsonResponse({'message': 'POST хүсэлт илгээнэ үү.'}, status=405)
+        response['Allow'] = 'POST'
+        return response
+    token = get_session(request)
+    if token is None:
+        return JsonResponse({'message': 'Дахин нэвтэрнэ үү.'}, status=401)
+    event = Event.objects.select_related('baiguullagiindugaar').filter(pk=event_id).first()
+    if event is None:
+        return JsonResponse({'message': 'Үйл ажиллагаа олдсонгүй.'}, status=404)
+    if event.baiguullagiindugaar.owner_id != token.user_id:
+        return JsonResponse({'message': 'Зөвхөн үүсгэсэн хэрэглэгч засах боломжтой.'}, status=403)
+    if request.content_type != 'application/json':
+        return JsonResponse({'message': 'application/json төрлөөр мэдээллээ илгээнэ үү.'}, status=415)
+    try:
+        body = json.loads(request.body)
+    except RequestDataTooBig:
+        return JsonResponse({'message': 'Хүсэлтийн хэмжээ хэтэрсэн байна.'}, status=413)
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'message': 'Зөв JSON хүсэлт илгээнэ үү.'}, status=400)
+    if not isinstance(body, dict):
+        return JsonResponse({'message': 'JSON object илгээнэ үү.'}, status=400)
+    allowed = set(REQUIRED_FIELDS) | {'tailbar', IMAGE_FIELD}
+    unknown = set(body) - allowed
+    if unknown:
+        return JsonResponse({'message': 'Танигдахгүй талбар байна.',
+                             'errors': {field: ['Танигдахгүй талбар.'] for field in sorted(unknown)}}, status=400)
+    organization_id = body.get('baiguullagiindugaar', event.baiguullagiindugaar_id)
+    if not isinstance(organization_id, str) or organization_id != event.baiguullagiindugaar_id:
+        return JsonResponse({'message': 'Үүсгэсэн байгууллагыг өөрчлөх боломжгүй.'}, status=400)
+
+    for field in ('garchig', 'tailbar', 'bairshil'):
+        if field in body:
+            if not isinstance(body[field], str):
+                return JsonResponse({'message': 'Мэдээллээ шалгана уу.',
+                                     'errors': {field: ['Текст утга оруулна уу.']}}, status=400)
+            setattr(event, field, body[field].strip())
+    if 'angilaliindugaar' in body:
+        if not isinstance(body['angilaliindugaar'], str):
+            return JsonResponse({'message': 'Мэдээллээ шалгана уу.',
+                                 'errors': {'angilaliindugaar': ['Текст утга оруулна уу.']}}, status=400)
+        event.angilaliindugaar_id = body['angilaliindugaar']
+    if 'oroltsohchdiin_too' in body:
+        if type(body['oroltsohchdiin_too']) is not int:
+            return JsonResponse({'message': 'Мэдээллээ шалгана уу.',
+                                 'errors': {'oroltsohchdiin_too': ['Бүхэл тоо оруулна уу.']}}, status=400)
+        event.oroltsohchdiin_too = body['oroltsohchdiin_too']
+    for field in ('ehleh_ognoo', 'duusah_ognoo'):
+        if field in body:
+            value = body[field]
+            try:
+                parsed = parse_datetime(value) if isinstance(value, str) else None
+            except ValueError:
+                parsed = None
+            if parsed is None or timezone.is_naive(parsed):
+                return JsonResponse({'message': 'Мэдээллээ шалгана уу.',
+                                     'errors': {field: ['Цагийн бүстэй ISO 8601 огноо оруулна уу.']}}, status=400)
+            setattr(event, field, parsed)
+
+    image = body.get(IMAGE_FIELD, event.zurag) or ''
+    if not isinstance(image, str) or len(image) > 500 or (image and not _is_uploaded_image(request, image)):
+        return JsonResponse({'message': 'Зургаа дахин оруулна уу.',
+                             'errors': {IMAGE_FIELD: ['Зураг буруу байна.']}}, status=400)
+    event.zurag = image
+    try:
+        event.full_clean(validate_unique=False)
+    except ValidationError as exc:
+        return JsonResponse({'message': 'Мэдээллээ шалгана уу.', 'errors': exc.message_dict}, status=400)
+    event.save()
+    return JsonResponse({'message': 'Үйл ажиллагааг шинэчиллээ.',
+                         'event': event_data(event, token.user)})
+
+
+def delete(request, event_id):
+    if request.method != 'POST':
+        response = JsonResponse({'message': 'POST хүсэлт илгээнэ үү.'}, status=405)
+        response['Allow'] = 'POST'
+        return response
+    token = get_session(request)
+    if token is None:
+        return JsonResponse({'message': 'Дахин нэвтэрнэ үү.'}, status=401)
+    event = Event.objects.select_related('baiguullagiindugaar').filter(pk=event_id).first()
+    if event is None:
+        return JsonResponse({'message': 'Үйл ажиллагаа олдсонгүй.'}, status=404)
+    if event.baiguullagiindugaar.owner_id != token.user_id:
+        return JsonResponse({'message': 'Зөвхөн үүсгэсэн хэрэглэгч устгах боломжтой.'}, status=403)
+    event.delete()
+    return JsonResponse({'message': 'Үйл ажиллагааг устгалаа.'})
 
 
 def event_home(request):
@@ -151,7 +248,8 @@ def event_home(request):
             raise ValueError
     except ValueError:
         return JsonResponse({'message': 'limit 1–100, offset 0–2147483647 байна.'}, status=400)
-    events = event_query(request)
+    token = get_session(request)
+    events = event_query(request, token)
     query = request.GET.get('q', '').strip()
     category = request.GET.get('category', '').strip()
     if query:
@@ -162,7 +260,8 @@ def event_home(request):
         events = events.filter(duusah_ognoo__gt=timezone.now())
     count = events.count()
     rows = list(events.order_by('ehleh_ognoo', 'pk')[offset:offset + limit])
-    return JsonResponse({'events': [event_data(event) for event in rows], 'count': count,
+    user = token.user if token else None
+    return JsonResponse({'events': [event_data(event, user) for event in rows], 'count': count,
                          'next_offset': offset + limit if offset + limit < count else None})
 
 
@@ -171,8 +270,10 @@ def detail(request, event_id):
         response = JsonResponse({'message': 'GET хүсэлт илгээнэ үү.'}, status=405)
         response['Allow'] = 'GET'
         return response
-    event = event_query(request).filter(pk=event_id).first()
-    return JsonResponse({'event': event_data(event)}) if event else JsonResponse({'message': 'Үйл ажиллагаа олдсонгүй.'}, status=404)
+    token = get_session(request)
+    event = event_query(request, token).filter(pk=event_id).first()
+    user = token.user if token else None
+    return JsonResponse({'event': event_data(event, user)}) if event else JsonResponse({'message': 'Үйл ажиллагаа олдсонгүй.'}, status=404)
 
 
 def participation(request, event_id, cancel=False):

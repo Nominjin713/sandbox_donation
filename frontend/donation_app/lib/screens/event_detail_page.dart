@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import 'auth_page.dart';
+import 'create_event_page.dart';
 
 const primaryBlue = Color(0xFF4389F5);
 const darkBlue = Color(0xFF19345C);
@@ -86,6 +87,57 @@ class _EventDetailPageState extends State<EventDetailPage> {
         if (!mounted) return;
       }
       await _load();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _editEvent() async {
+    final event = _event;
+    if (_busy || event == null) return;
+    final updated = await Navigator.of(context).push<EventRecord>(
+      MaterialPageRoute(
+        builder: (_) => CreateEventPage(
+          authService: _api,
+          initialEvent: event,
+        ),
+      ),
+    );
+    if (mounted && updated != null) setState(() => _event = updated);
+  }
+
+  Future<void> _deleteEvent() async {
+    final event = _event;
+    if (_busy || event == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Үйл ажиллагаа устгах уу?'),
+        content: Text(
+          '“${event.title}”-ийг устгавал оролцогчдын бүртгэл мөн устна.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Болих'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Устгах'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await _service.delete(event.id);
+      if (mounted) Navigator.of(context).pop(true);
+    } on AuthException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -238,6 +290,31 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     ),
                   ),
                   const SizedBox(height: 22),
+                  if (event.isOwner) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _busy ? null : _editEvent,
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Засах'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _busy ? null : _deleteEvent,
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('Устгах'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   FilledButton.icon(
                     onPressed:
                         _busy ||

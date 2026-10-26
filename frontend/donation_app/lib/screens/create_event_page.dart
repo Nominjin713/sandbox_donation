@@ -14,8 +14,13 @@ const Color backgroundBlue = Color(0xFFF2F7FF);
 const Color borderBlue = Color(0xFFDCE8FF);
 
 class CreateEventPage extends StatefulWidget {
-  const CreateEventPage({super.key, required this.authService});
+  const CreateEventPage({
+    super.key,
+    required this.authService,
+    this.initialEvent,
+  });
   final AuthService authService;
+  final EventRecord? initialEvent;
 
   @override
   State<CreateEventPage> createState() => _CreateEventPageState();
@@ -24,9 +29,12 @@ class CreateEventPage extends StatefulWidget {
 class _CreateEventPageState extends State<CreateEventPage> {
   final _formKey = GlobalKey<FormState>();
   late final _events = EventService(widget.authService);
-  final _eventId = EventService.newId();
+  late final _eventId = widget.initialEvent?.id ?? EventService.newId();
   late final _organizationController = TextEditingController(
-    text: widget.authService.currentSession?.name ?? '',
+    text:
+        widget.initialEvent?.organization ??
+        widget.authService.currentSession?.name ??
+        '',
   );
   final _endDateController = TextEditingController();
   DateTime? _selectedEndDate;
@@ -55,6 +63,23 @@ class _CreateEventPageState extends State<CreateEventPage> {
   String? _imageName;
   // Нэг удаа байршуулсан бол дахин нийтлэхэд дахин илгээхгүй
   String? _uploadedImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final event = widget.initialEvent;
+    if (event == null) return;
+    _titleController.text = event.title;
+    _descriptionController.text = event.description;
+    _dateController.text = EventRecord.dateLabel(event.startsAt);
+    _endDateController.text = EventRecord.dateLabel(event.endsAt);
+    _locationController.text = event.location;
+    _slotsController.text = '${event.capacity}';
+    _selectedDate = event.startsAt;
+    _selectedEndDate = event.endsAt;
+    _category = eventCategories[event.category] ?? event.category;
+    _uploadedImageUrl = event.imageUrl;
+  }
 
   @override
   void dispose() {
@@ -171,8 +196,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
             icon: const Icon(Icons.arrow_back_rounded),
           ),
         ),
-        title: const Text(
-          'Үйл ажиллагаа бүртгэх',
+        title: Text(
+          widget.initialEvent == null
+              ? 'Үйл ажиллагаа бүртгэх'
+              : 'Үйл ажиллагаа засах',
           style: TextStyle(
             color: darkBlue,
             fontWeight: FontWeight.w800,
@@ -830,7 +857,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
               )
             : const Icon(Icons.send_rounded, size: 21),
         label: Text(
-          _isPublishing ? 'Түр хүлээнэ үү...' : 'Үйл ажиллагаа нийтлэх',
+          _isPublishing
+              ? 'Түр хүлээнэ үү...'
+              : widget.initialEvent == null
+              ? 'Үйл ажиллагаа нийтлэх'
+              : 'Өөрчлөлтийг хадгалах',
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
@@ -861,18 +892,32 @@ class _CreateEventPageState extends State<CreateEventPage> {
         _uploadedImageUrl = imageUrl;
       }
 
-      final event = await _events.create(
-        id: _eventId,
-        title: _titleController.text,
-        description: _descriptionController.text,
-        organization: _organizationController.text,
-        category: categoryCode(_category),
-        location: _locationController.text,
-        startsAt: _selectedDate!,
-        endsAt: _selectedEndDate!,
-        capacity: int.parse(_slotsController.text.trim()),
-        imageUrl: imageUrl, // ШИНЭ
-      );
+      final existing = widget.initialEvent;
+      final event = existing == null
+          ? await _events.create(
+              id: _eventId,
+              title: _titleController.text,
+              description: _descriptionController.text,
+              organization: _organizationController.text,
+              category: categoryCode(_category),
+              location: _locationController.text,
+              startsAt: _selectedDate!,
+              endsAt: _selectedEndDate!,
+              capacity: int.parse(_slotsController.text.trim()),
+              imageUrl: imageUrl,
+            )
+          : await _events.update(
+              id: existing.id,
+              title: _titleController.text,
+              description: _descriptionController.text,
+              organization: _organizationController.text,
+              category: categoryCode(_category),
+              location: _locationController.text,
+              startsAt: _selectedDate!,
+              endsAt: _selectedEndDate!,
+              capacity: int.parse(_slotsController.text.trim()),
+              imageUrl: imageUrl,
+            );
       if (!mounted) return;
       Navigator.of(context).pop(event);
     } on AuthException catch (error) {
