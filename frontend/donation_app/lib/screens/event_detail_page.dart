@@ -1,5 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
@@ -8,9 +11,15 @@ import 'create_event_page.dart';
 
 const primaryBlue = Color(0xFF4389F5);
 const darkBlue = Color(0xFF19345C);
+const backgroundBlue = Color(0xFFF4F8FF);
 
 class EventDetailPage extends StatefulWidget {
-  const EventDetailPage({super.key, required this.event, this.authService});
+  const EventDetailPage({
+    super.key,
+    required this.event,
+    this.authService,
+  });
+
   final Map<String, String> event;
   final AuthService? authService;
 
@@ -21,8 +30,10 @@ class EventDetailPage extends StatefulWidget {
 class _EventDetailPageState extends State<EventDetailPage> {
   late final _api = widget.authService ?? AuthService();
   late final _service = EventService(_api);
+
   EventRecord? _event;
-  bool _loading = true, _busy = false;
+  bool _loading = true;
+  bool _busy = false;
   String? _error;
 
   @override
@@ -33,42 +44,71 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
   @override
   void dispose() {
-    if (widget.authService == null) _api.close();
+    if (widget.authService == null) {
+      _api.close();
+    }
     super.dispose();
   }
 
   Future<void> _load() async {
     if (!mounted) return;
+
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
-      final event = await _service.detail(widget.event['id'] ?? '');
-      if (mounted) setState(() => _event = event);
+      final result = await _service.detail(widget.event['id'] ?? '');
+
+      if (mounted) {
+        setState(() => _event = result);
+      }
     } on AuthException catch (error) {
-      if (mounted) setState(() => _error = error.message);
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = 'Мэдээлэл авахад алдаа гарлаа.');
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   Future<void> _participate() async {
     if (_busy || _event == null) return;
+
     final cancel = _api.currentSession != null && _event!.isJoined;
+
     if (_api.currentSession == null) {
       await Navigator.of(context).push<AuthSession>(
-        MaterialPageRoute(builder: (_) => AuthPage(authService: _api)),
+        MaterialPageRoute(
+          builder: (_) => AuthPage(authService: _api),
+        ),
       );
+
       if (!mounted || _api.currentSession == null) return;
     }
+
     setState(() => _busy = true);
+
     try {
-      final event = await _service.participate(_event!.id, cancel: cancel);
+      final result = await _service.participate(
+        _event!.id,
+        cancel: cancel,
+      );
+
       if (!mounted) return;
-      setState(() => _event = event);
+
+      setState(() => _event = result);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             cancel
                 ? 'Оролцох бүртгэлээ цуцаллаа.'
@@ -78,23 +118,33 @@ class _EventDetailPageState extends State<EventDetailPage> {
       );
     } on AuthException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+
       if (error.statusCode == 401) {
         await Navigator.of(context).push<AuthSession>(
-          MaterialPageRoute(builder: (_) => AuthPage(authService: _api)),
+          MaterialPageRoute(
+            builder: (_) => AuthPage(authService: _api),
+          ),
         );
+
         if (!mounted) return;
       }
+
       await _load();
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _editEvent() async {
     final event = _event;
     if (_busy || event == null) return;
+
     final updated = await Navigator.of(context).push<EventRecord>(
       MaterialPageRoute(
         builder: (_) => CreateEventPage(
@@ -103,15 +153,22 @@ class _EventDetailPageState extends State<EventDetailPage> {
         ),
       ),
     );
-    if (mounted && updated != null) setState(() => _event = updated);
+
+    if (mounted && updated != null) {
+      setState(() => _event = updated);
+    }
   }
 
   Future<void> _deleteEvent() async {
     final event = _event;
     if (_busy || event == null) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         title: const Text('Үйл ажиллагаа устгах уу?'),
         content: Text(
           '“${event.title}”-ийг устгавал оролцогчдын бүртгэл мөн устна.',
@@ -122,38 +179,85 @@ class _EventDetailPageState extends State<EventDetailPage> {
             child: const Text('Болих'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Устгах'),
           ),
         ],
       ),
     );
+
     if (confirmed != true || !mounted) return;
+
     setState(() => _busy = true);
+
     try {
       await _service.delete(event.id);
-      if (mounted) Navigator.of(context).pop(true);
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
     } on AuthException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
+  }
+
+  Future<void> _openMap(EventRecord event) async {
+    // Эдгээр нь жишээ координат.
+    // Бодит координатыг backend-ээс авах шаардлагатай.
+    final result = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(
+        builder: (_) => EventMapPage(
+          location: event.location,
+          latitude: 47.9184,
+          longitude: 106.9177,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Газрын зураг дээрх байршлыг сонголоо.'),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final event = _event;
-    final closed =
-        event != null &&
-        (event.status != 'open' || !event.endsAt.isAfter(DateTime.now()));
-    final full = event != null && event.participantCount >= event.capacity;
+
+    final closed = event != null &&
+        (event.status != 'open' ||
+            !event.endsAt.isAfter(DateTime.now()));
+
+    final full = event != null &&
+        event.participantCount >= event.capacity;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
+      backgroundColor: backgroundBlue,
       appBar: AppBar(
-        title: const Text('Үйл ажиллагааны дэлгэрэнгүй'),
+        backgroundColor: backgroundBlue,
+        foregroundColor: darkBlue,
+        elevation: 0,
+        title: const Text(
+          'Үйл ажиллагааны дэлгэрэнгүй',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
             tooltip: 'Шинэчлэх',
@@ -168,12 +272,18 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     await Clipboard.setData(
                       ClipboardData(
                         text:
-                            '${event.title}\n${EventRecord.dateLabel(event.startsAt)}\n${event.location}',
+                            '${event.title}\n'
+                            '${EventRecord.dateLabel(event.startsAt)}\n'
+                            '${event.location}',
                       ),
                     );
+
                     if (!context.mounted) return;
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Мэдээллийг хууллаа.')),
+                      const SnackBar(
+                        content: Text('Мэдээллийг хууллаа.'),
+                      ),
                     );
                   },
             icon: const Icon(Icons.share_outlined),
@@ -187,52 +297,63 @@ class _EventDetailPageState extends State<EventDetailPage> {
             onRefresh: _load,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
               children: [
-                if (_loading) const LinearProgressIndicator(),
+                if (_loading)
+                  const LinearProgressIndicator(
+                    color: primaryBlue,
+                  ),
+
                 if (_error != null) ...[
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                  _card(
+                    Column(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 42,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                        ),
+                        TextButton(
+                          onPressed: _load,
+                          child: const Text('Дахин оролдох'),
+                        ),
+                      ],
                     ),
                   ),
-                  TextButton(
-                    onPressed: _load,
-                    child: const Text('Дахин оролдох'),
-                  ),
                 ],
+
                 if (event != null) ...[
-                  const SizedBox(height: 16),
+                  _buildHeader(event),
+
+                  const SizedBox(height: 18),
+
                   _card(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          eventCategories[event.category] ?? event.category,
-                          style: const TextStyle(color: primaryBlue),
+                        const _SectionTitle(
+                          icon: Icons.info_outline,
+                          title: 'Үйл ажиллагааны мэдээлэл',
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          event.title,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: darkBlue,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
+
                         _info(
-                          Icons.calendar_month,
-                          'Эхлэх',
+                          Icons.calendar_month_outlined,
+                          'Эхлэх огноо',
                           EventRecord.dateLabel(event.startsAt),
                         ),
+
                         _info(
-                          Icons.event_available,
-                          'Дуусах',
+                          Icons.event_available_outlined,
+                          'Дуусах огноо',
                           EventRecord.dateLabel(event.endsAt),
                         ),
-                        _info(Icons.place_outlined, 'Байршил', event.location),
+
                         _info(
                           Icons.business_outlined,
                           'Зохион байгуулагч',
@@ -241,55 +362,195 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
+
+                  const SizedBox(height: 16),
+
                   _card(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Үйл ажиллагааны тухай',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                        const _SectionTitle(
+                          icon: Icons.description_outlined,
+                          title: 'Үйл ажиллагааны тухай',
                         ),
                         const SizedBox(height: 14),
                         Text(
                           event.description.isEmpty
                               ? 'Тайлбар оруулаагүй байна.'
                               : event.description,
-                          style: const TextStyle(height: 1.6),
+                          style: const TextStyle(
+                            height: 1.7,
+                            fontSize: 15,
+                            color: Color(0xFF53647D),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
+
+                  const SizedBox(height: 16),
+
                   _card(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Оролцогч: ${event.participantCount}/${event.capacity}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        const _SectionTitle(
+                          icon: Icons.location_on_outlined,
+                          title: 'Үйл ажиллагааны байршил',
                         ),
                         const SizedBox(height: 14),
-                        LinearProgressIndicator(
-                          value: event.capacity == 0
-                              ? 0
-                              : (event.participantCount / event.capacity)
-                                    .clamp(0, 1)
-                                    .toDouble(),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          event.isJoined
-                              ? 'Та энэ үйл ажиллагаанд бүртгэлтэй.'
-                              : 'Үлдсэн байр: ${(event.capacity - event.participantCount).clamp(0, event.capacity)}',
+
+                        InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => _openMap(event),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0F6FF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFD9E7FF),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: primaryBlue.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: primaryBlue,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        event.location,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: darkBlue,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      const Text(
+                                        'Газрын зураг харах',
+                                        style: TextStyle(
+                                          color: primaryBlue,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_ios,
+                                  color: primaryBlue,
+                                  size: 17,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 22),
+
+                  const SizedBox(height: 16),
+
+                  _card(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionTitle(
+                          icon: Icons.groups_outlined,
+                          title: 'Оролцогчид',
+                        ),
+                        const SizedBox(height: 18),
+
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${event.participantCount}',
+                              style: const TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold,
+                                color: primaryBlue,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 5,
+                                left: 5,
+                              ),
+                              child: Text(
+                                '/ ${event.capacity} хүн',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              event.isJoined
+                                  ? Icons.check_circle
+                                  : Icons.people_alt_outlined,
+                              color: event.isJoined
+                                  ? Colors.green
+                                  : primaryBlue,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            minHeight: 9,
+                            backgroundColor: const Color(0xFFE7EEFA),
+                            color: primaryBlue,
+                            value: event.capacity <= 0
+                                ? 0
+                                : (event.participantCount /
+                                        event.capacity)
+                                    .clamp(0.0, 1.0)
+                                    .toDouble(),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Text(
+                          event.isJoined
+                              ? 'Та энэ үйл ажиллагаанд бүртгэлтэй.'
+                              : full
+                                  ? 'Оролцогчдын тоо дүүрсэн байна.'
+                                  : 'Үлдсэн байр: '
+                                      '${(event.capacity - event.participantCount).clamp(0, event.capacity)}',
+                          style: const TextStyle(
+                            color: Color(0xFF53647D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
                   if (event.isOwner) ...[
                     Row(
                       children: [
@@ -298,6 +559,18 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             onPressed: _busy ? null : _editEvent,
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Засах'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              foregroundColor: primaryBlue,
+                              side: const BorderSide(
+                                color: primaryBlue,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -307,7 +580,16 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             icon: const Icon(Icons.delete_outline),
                             label: const Text('Устгах'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.red.shade700,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(
+                                color: Colors.red,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
                           ),
                         ),
@@ -315,37 +597,54 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     ),
                     const SizedBox(height: 14),
                   ],
-                  FilledButton.icon(
-                    onPressed:
-                        _busy ||
-                            _loading ||
-                            (!event.isJoined && (closed || full))
-                        ? null
-                        : _participate,
-                    icon: _busy
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Icon(
-                            event.isJoined
-                                ? Icons.cancel_outlined
-                                : Icons.person_add_alt,
-                          ),
-                    label: Text(
-                      _busy
-                          ? 'Түр хүлээнэ үү...'
-                          : event.isJoined
-                          ? 'Оролцохоо цуцлах'
-                          : closed
-                          ? 'Бүртгэл хаагдсан'
-                          : full
-                          ? 'Бүртгэл дүүрсэн'
-                          : 'Оролцох',
+
+                  SizedBox(
+                    height: 54,
+                    child: FilledButton.icon(
+                      onPressed: _busy ||
+                              _loading ||
+                              (!event.isJoined && (closed || full))
+                          ? null
+                          : _participate,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        disabledBackgroundColor:
+                            const Color(0xFFCFD8E8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: _busy
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(
+                              event.isJoined
+                                  ? Icons.cancel_outlined
+                                  : Icons.volunteer_activism,
+                            ),
+                      label: Text(
+                        _busy
+                            ? 'Түр хүлээнэ үү...'
+                            : event.isJoined
+                                ? 'Оролцохоо цуцлах'
+                                : closed
+                                    ? 'Бүртгэл хаагдсан'
+                                    : full
+                                        ? 'Бүртгэл дүүрсэн'
+                                        : 'Оролцох',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
                 ],
               ],
             ),
@@ -355,20 +654,373 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
   }
 
-  Widget _card(Widget child) => Card(
-    color: Colors.white,
-    child: Padding(padding: const EdgeInsets.all(22), child: child),
-  );
+  Widget _buildHeader(EventRecord event) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF4389F5),
+            Color(0xFF245FC5),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: primaryBlue.withValues(alpha: 0.20),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 7,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.20),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Text(
+              eventCategories[event.category] ?? event.category,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            event.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 27,
+              height: 1.3,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_month,
+                color: Colors.white,
+                size: 19,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  EventRecord.dateLabel(event.startsAt),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                color: Colors.white,
+                size: 19,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  event.location,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _info(IconData icon, String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _card(Widget child) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFEAF0FA),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: darkBlue.withValues(alpha: 0.035),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _info(
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F6FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: primaryBlue,
+              size: 21,
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: darkBlue,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({
+    required this.icon,
+    required this.title,
+  });
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        Icon(icon, color: primaryBlue, size: 22),
-        const SizedBox(width: 12),
-        Expanded(child: Text('$label: $value')),
+        Icon(
+          icon,
+          color: primaryBlue,
+          size: 23,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: darkBlue,
+            ),
+          ),
+        ),
       ],
-    ),
-  );
+    );
+  }
+}
+
+// Газрын зургийн хуудас
+
+class EventMapPage extends StatefulWidget {
+  const EventMapPage({
+    super.key,
+    required this.location,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final String location;
+  final double latitude;
+  final double longitude;
+
+  @override
+  State<EventMapPage> createState() => _EventMapPageState();
+}
+
+class _EventMapPageState extends State<EventMapPage> {
+  late LatLng _selectedPoint;
+  bool _confirmed = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _selectedPoint = LatLng(
+      widget.latitude,
+      widget.longitude,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: backgroundBlue,
+      appBar: AppBar(
+        title: const Text('Үйл ажиллагааны байршил'),
+        backgroundColor: backgroundBlue,
+        foregroundColor: darkBlue,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: _selectedPoint,
+                initialZoom: 15,
+                onTap: (tapPosition, point) {
+                  setState(() {
+                    _selectedPoint = point;
+                    _confirmed = false;
+                  });
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.donation_app',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selectedPoint,
+                      width: 55,
+                      height: 55,
+                      child: const Icon(
+                        Icons.location_pin,
+                        size: 48,
+                        color: primaryBlue,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 26),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(26),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Үйл ажиллагаа болох газар',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                      color: darkBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.location,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Өргөрөг: '
+                    '${_selectedPoint.latitude.toStringAsFixed(6)}\n'
+                    'Уртраг: '
+                    '${_selectedPoint.longitude.toStringAsFixed(6)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.7,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity:
+                        ListTileControlAffinity.leading,
+                    activeColor: primaryBlue,
+                    value: _confirmed,
+                    title: const Text(
+                      'Байршлыг баталгаажуулсан',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _confirmed = value ?? false;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: FilledButton.icon(
+                      onPressed: _confirmed
+                          ? () => Navigator.pop(
+                                context,
+                                _selectedPoint,
+                              )
+                          : null,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Байршлыг сонгох'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
@@ -19,6 +21,7 @@ class CreateEventPage extends StatefulWidget {
     required this.authService,
     this.initialEvent,
   });
+
   final AuthService authService;
   final EventRecord? initialEvent;
 
@@ -30,16 +33,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
   final _formKey = GlobalKey<FormState>();
   late final _events = EventService(widget.authService);
   late final _eventId = widget.initialEvent?.id ?? EventService.newId();
+
   late final _organizationController = TextEditingController(
-    text:
-        widget.initialEvent?.organization ??
+    text: widget.initialEvent?.organization ??
         widget.authService.currentSession?.name ??
         '',
   );
-  final _endDateController = TextEditingController();
-  DateTime? _selectedEndDate;
-  String? _error;
 
+  final _endDateController = TextEditingController();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _dateController = TextEditingController();
@@ -56,19 +57,25 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   String _category = 'Байгаль орчин';
   DateTime? _selectedDate;
+  DateTime? _selectedEndDate;
   bool _isPublishing = false;
+  String? _error;
 
-  // ШИНЭ: сонгосон зураг
+  // Газрын зураг дээр сонгосон байршил
+  LatLng? _selectedLocation;
+  static const LatLng _defaultLocation = LatLng(47.9184, 106.9177);
+
   Uint8List? _imageBytes;
   String? _imageName;
-  // Нэг удаа байршуулсан бол дахин нийтлэхэд дахин илгээхгүй
   String? _uploadedImageUrl;
 
   @override
   void initState() {
     super.initState();
+
     final event = widget.initialEvent;
     if (event == null) return;
+
     _titleController.text = event.title;
     _descriptionController.text = event.description;
     _dateController.text = EventRecord.dateLabel(event.startsAt);
@@ -93,24 +100,29 @@ class _CreateEventPageState extends State<CreateEventPage> {
     super.dispose();
   }
 
-  // ШИНЭ: галерейгаас зураг сонгох
   Future<void> _pickImage() async {
     if (_isPublishing) return;
+
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        // том зургийг багасгаж, хурдан илгээгдэхээр болгоно
         maxWidth: 1600,
         maxHeight: 1600,
         imageQuality: 82,
       );
+
       if (picked == null || !mounted) return;
+
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
+
       if (bytes.length > EventService.maxImageBytes) {
-        setState(() => _error = 'Зургийн хэмжээ 5MB-аас ихгүй байх ёстой.');
+        setState(() {
+          _error = 'Зургийн хэмжээ 5MB-аас ихгүй байх ёстой.';
+        });
         return;
       }
+
       setState(() {
         _imageBytes = bytes;
         _imageName = picked.name;
@@ -119,13 +131,16 @@ class _CreateEventPageState extends State<CreateEventPage> {
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Зураг сонгож чадсангүй. Дахин оролдоно уу.');
+        setState(() {
+          _error = 'Зураг сонгож чадсангүй. Дахин оролдоно уу.';
+        });
       }
     }
   }
 
   void _removeImage() {
     if (_isPublishing) return;
+
     setState(() {
       _imageBytes = null;
       _imageName = null;
@@ -135,12 +150,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   Future<void> _chooseDate({bool end = false}) async {
     if (_isPublishing) return;
+
     final now = DateTime.now();
     final initial = end
         ? _selectedEndDate ??
-              (_selectedDate ?? now).add(const Duration(hours: 1))
+            (_selectedDate ?? now).add(const Duration(hours: 1))
         : _selectedDate ?? now;
+
     final firstDay = DateTime(now.year, now.month, now.day);
+
     final date = await showDatePicker(
       context: context,
       initialDate: initial.isBefore(firstDay) ? firstDay : initial,
@@ -150,14 +168,18 @@ class _CreateEventPageState extends State<CreateEventPage> {
       cancelText: 'Болих',
       confirmText: 'Сонгох',
     );
+
     if (!mounted || date == null) return;
+
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
       confirmText: 'Сонгох',
       cancelText: 'Болих',
     );
+
     if (!mounted || time == null) return;
+
     final selected = DateTime(
       date.year,
       date.month,
@@ -165,6 +187,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       time.hour,
       time.minute,
     );
+
     setState(() {
       if (end) {
         _selectedEndDate = selected;
@@ -200,7 +223,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           widget.initialEvent == null
               ? 'Үйл ажиллагаа бүртгэх'
               : 'Үйл ажиллагаа засах',
-          style: TextStyle(
+          style: const TextStyle(
             color: darkBlue,
             fontWeight: FontWeight.w800,
             fontSize: 18,
@@ -222,7 +245,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     _buildBanner(),
                     const SizedBox(height: 24),
 
-                    // ШИНЭ: зураг
                     _buildLabel('Үйл ажиллагааны зураг', required: false),
                     const SizedBox(height: 9),
                     _buildImagePicker(),
@@ -236,10 +258,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       icon: Icons.business_outlined,
                       validator: (value) =>
                           value == null ||
-                              value.trim().isEmpty ||
-                              value.trim().length > 50
-                          ? '1–50 тэмдэгттэй нэр оруулна уу.'
-                          : null,
+                                  value.trim().isEmpty ||
+                                  value.trim().length > 50
+                              ? '1–50 тэмдэгттэй нэр оруулна уу.'
+                              : null,
                     ),
                     const SizedBox(height: 22),
 
@@ -307,6 +329,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
                     _dateField(end: true),
                     const SizedBox(height: 22),
+
                     _buildLabel('Оролцогчдын тоо'),
                     const SizedBox(height: 9),
                     _buildField(
@@ -314,7 +337,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       hint: 'Жишээ: 30',
                       icon: Icons.groups_rounded,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Оролцогчдын тоог оруулна уу';
@@ -322,7 +347,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
                         final count = int.tryParse(value.trim());
 
-                        if (count == null || count <= 0 || count > 2147483647) {
+                        if (count == null ||
+                            count <= 0 ||
+                            count > 2147483647) {
                           return '1–2147483647 бүхэл тоо оруулна уу';
                         }
 
@@ -363,6 +390,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           ),
                         ),
                       ),
+
                     _buildPublishButton(),
                     const SizedBox(height: 17),
 
@@ -399,7 +427,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
     );
   }
 
-  // ШИНЭ: зураг сонгох / харах хэсэг
   Widget _buildImagePicker() {
     final bytes = _imageBytes;
 
@@ -443,7 +470,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 const SizedBox(height: 4),
                 const Text(
                   'JPG эсвэл PNG, 5MB хүртэл',
-                  style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
+                  style: TextStyle(
+                    color: Color(0xFF7185A5),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -455,7 +485,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: AspectRatio(
-        // жагсаалтын картын зурагтай ижил харьцаа
         aspectRatio: 16 / 10,
         child: Stack(
           fit: StackFit.expand,
@@ -475,7 +504,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    icon: const Icon(Icons.photo_library_rounded, size: 18),
+                    icon: const Icon(
+                      Icons.photo_library_rounded,
+                      size: 18,
+                    ),
                     label: const Text(
                       'Солих',
                       style: TextStyle(fontWeight: FontWeight.w800),
@@ -487,7 +519,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     onPressed: _isPublishing ? null : _removeImage,
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFFE5484D),
+                      foregroundColor: Color(0xFFE5484D),
                     ),
                     icon: const Icon(Icons.delete_outline_rounded),
                   ),
@@ -508,7 +540,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFE0EDFF), Color(0xFFF2F7FF), Color(0xFFE5F5FF)],
+          colors: [
+            Color(0xFFE0EDFF),
+            Color(0xFFF2F7FF),
+            Color(0xFFE5F5FF),
+          ],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white, width: 2),
@@ -517,7 +553,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 7,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(30),
@@ -574,7 +613,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
     );
   }
 
-  // ШИНЭ: required=false бол улаан од харагдахгүй
   Widget _buildLabel(String text, {bool required = true}) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
@@ -600,7 +638,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
           else
             const Text(
               '(заавал биш)',
-              style: TextStyle(color: Color(0xFF94A5C0), fontSize: 12),
+              style: TextStyle(
+                color: Color(0xFF94A5C0),
+                fontSize: 12,
+              ),
             ),
         ],
       ),
@@ -663,7 +704,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
-          borderSide: const BorderSide(color: primaryBlue, width: 1.7),
+          borderSide: const BorderSide(
+            color: primaryBlue,
+            width: 1.7,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
@@ -671,7 +715,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+          borderSide: const BorderSide(
+            color: Colors.redAccent,
+            width: 1.5,
+          ),
         ),
         errorStyle: const TextStyle(fontSize: 11),
       ),
@@ -699,7 +746,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
         children: [
           const Text(
             'Үйл ажиллагааны төрлөө сонгоно уу',
-            style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
+            style: TextStyle(
+              color: Color(0xFF7185A5),
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -712,7 +762,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
               return InkWell(
                 borderRadius: BorderRadius.circular(30),
                 onTap: () {
-                  if (!_isPublishing) setState(() => _category = category);
+                  if (!_isPublishing) {
+                    setState(() => _category = category);
+                  }
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
@@ -736,7 +788,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       Icon(
                         icons[index],
                         size: 17,
-                        color: selected ? primaryBlue : const Color(0xFF8295B5),
+                        color: selected
+                            ? primaryBlue
+                            : const Color(0xFF8295B5),
                       ),
                       const SizedBox(width: 7),
                       Text(
@@ -784,17 +838,36 @@ class _CreateEventPageState extends State<CreateEventPage> {
             if (value == null || value.trim().isEmpty) {
               return 'Огноо сонгоно уу';
             }
+
             if (end &&
                 _selectedDate != null &&
                 _selectedEndDate != null &&
                 !_selectedEndDate!.isAfter(_selectedDate!)) {
               return 'Дуусах цаг эхлэх цагаас хойш байна.';
             }
+
             return null;
           },
         ),
       ],
     );
+  }
+
+  Future<void> _selectLocationOnMap() async {
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerPage(
+          initialLocation: _selectedLocation ?? _defaultLocation,
+        ),
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _selectedLocation = result;
+    });
   }
 
   Widget _locationField() {
@@ -805,7 +878,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         const SizedBox(height: 9),
         _buildField(
           controller: _locationController,
-          hint: 'Үйл ажиллагаа болох газар',
+          hint: 'Үйл ажиллагаа болох газрын нэр',
           icon: Icons.location_on_rounded,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -814,6 +887,41 @@ class _CreateEventPageState extends State<CreateEventPage> {
             return null;
           },
         ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _isPublishing ? null : _selectLocationOnMap,
+          icon: const Icon(Icons.map_outlined),
+          label: const Text('Газрын зураг дээр байршил сонгох'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primaryBlue,
+            minimumSize: const Size(double.infinity, 48),
+            side: const BorderSide(color: borderBlue),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+        ),
+        if (_selectedLocation != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE7F1FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Байршил сонгогдсон ✓\n'
+              'Өргөрөг: ${_selectedLocation!.latitude.toStringAsFixed(6)}\n'
+              'Уртраг: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
+              style: const TextStyle(
+                color: darkBlue,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -824,7 +932,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
       height: 59,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF68A6FF), Color(0xFF4389F5), Color(0xFF326EF0)],
+          colors: [
+            Color(0xFF68A6FF),
+            Color(0xFF4389F5),
+            Color(0xFF326EF0),
+          ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -860,9 +972,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
           _isPublishing
               ? 'Түр хүлээнэ үү...'
               : widget.initialEvent == null
-              ? 'Үйл ажиллагаа нийтлэх'
-              : 'Өөрчлөлтийг хадгалах',
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  ? 'Үйл ажиллагаа нийтлэх'
+                  : 'Өөрчлөлтийг хадгалах',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );
@@ -870,29 +985,38 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   Future<void> _submit() async {
     if (_isPublishing || !_formKey.currentState!.validate()) return;
+
     FocusScope.of(context).unfocus();
+
     if (widget.authService.currentSession == null) {
       await Navigator.of(context).push<AuthSession>(
         MaterialPageRoute(
           builder: (_) => AuthPage(authService: widget.authService),
         ),
       );
+
       if (!mounted || widget.authService.currentSession == null) return;
     }
+
     setState(() {
       _isPublishing = true;
       _error = null;
     });
+
     try {
-      // ШИНЭ: эхлээд зургийг байршуулж, URL-ыг нь авна
       var imageUrl = _uploadedImageUrl;
       final bytes = _imageBytes;
+
       if (bytes != null && imageUrl == null) {
-        imageUrl = await _events.uploadImage(bytes, _imageName ?? 'image.jpg');
+        imageUrl = await _events.uploadImage(
+          bytes,
+          _imageName ?? 'image.jpg',
+        );
         _uploadedImageUrl = imageUrl;
       }
 
       final existing = widget.initialEvent;
+
       final event = existing == null
           ? await _events.create(
               id: _eventId,
@@ -918,25 +1042,173 @@ class _CreateEventPageState extends State<CreateEventPage> {
               capacity: int.parse(_slotsController.text.trim()),
               imageUrl: imageUrl,
             );
+
       if (!mounted) return;
       Navigator.of(context).pop(event);
     } on AuthException catch (error) {
       if (!mounted) return;
+
       setState(() => _error = error.message);
+
       if (error.statusCode == 401) {
         await Navigator.of(context).push<AuthSession>(
           MaterialPageRoute(
             builder: (_) => AuthPage(authService: widget.authService),
           ),
         );
+
         if (mounted && widget.authService.currentSession != null) {
-          setState(
-            () => _error = 'Нэвтэрлээ. Мэдээллээ шалгаад дахин нийтлээрэй.',
-          );
+          setState(() {
+            _error =
+                'Нэвтэрлээ. Мэдээллээ шалгаад дахин нийтлээрэй.';
+          });
         }
       }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = 'Нийтлэх үед алдаа гарлаа: $error';
+        });
+      }
     } finally {
-      if (mounted) setState(() => _isPublishing = false);
+      if (mounted) {
+        setState(() => _isPublishing = false);
+      }
     }
+  }
+}
+
+/// Арга хэмжээний байршлыг газрын зураг дээр сонгох хуудас.
+class LocationPickerPage extends StatefulWidget {
+  const LocationPickerPage({
+    super.key,
+    required this.initialLocation,
+  });
+
+  final LatLng initialLocation;
+
+  @override
+  State<LocationPickerPage> createState() => _LocationPickerPageState();
+}
+
+class _LocationPickerPageState extends State<LocationPickerPage> {
+  late LatLng _selectedPoint;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPoint = widget.initialLocation;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: backgroundBlue,
+      appBar: AppBar(
+        title: const Text('Байршил сонгох'),
+        centerTitle: true,
+        backgroundColor: backgroundBlue,
+        foregroundColor: darkBlue,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Text(
+              'Газрын зураг дээр үйл ажиллагаа болох газраа '
+              'товшоод тэмдэглэгээг байрлуулна уу.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: darkBlue,
+                height: 1.4,
+              ),
+            ),
+          ),
+          Expanded(
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: _selectedPoint,
+                initialZoom: 14,
+                onTap: (tapPosition, point) {
+                  setState(() => _selectedPoint = point);
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.volunteerhub.app',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selectedPoint,
+                      width: 52,
+                      height: 52,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                    ),
+                  ],
+                ),
+                RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(
+                      '© OpenStreetMap contributors',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Өргөрөг: '
+                    '${_selectedPoint.latitude.toStringAsFixed(6)}',
+                    style: const TextStyle(color: darkBlue),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Уртраг: '
+                    '${_selectedPoint.longitude.toStringAsFixed(6)}',
+                    style: const TextStyle(color: darkBlue),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop<LatLng>(
+                          context,
+                          _selectedPoint,
+                        );
+                      },
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Байршил баталгаажуулах'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
