@@ -1,13 +1,11 @@
 import base64
 import binascii
-import hashlib
 import json
 import logging
 import os
-import time
 from uuid import uuid4
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 from urllib.request import Request, urlopen
 
 from django.conf import settings
@@ -95,25 +93,16 @@ def _save_image_to_cloudinary(data, extension):
     cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
     config = urlsplit(cloudinary_url)
     cloud_name = config.hostname
-    api_key = config.username
-    api_secret = config.password
+    api_key = unquote(config.username or '')
+    api_secret = unquote(config.password or '')
     if not all((cloud_name, api_key, api_secret)):
         raise ValueError('CLOUDINARY_URL is not configured.')
 
-    timestamp = str(int(time.time()))
     public_id = uuid4().hex
     fields = {
         'folder': 'events',
         'public_id': public_id,
-        'timestamp': timestamp,
-        'api_key': api_key,
     }
-    signature_params = '&'.join(
-        f'{key}={fields[key]}' for key in sorted(('folder', 'public_id', 'timestamp'))
-    )
-    fields['signature'] = hashlib.sha1(
-        f'{signature_params}{api_secret}'.encode('utf-8')
-    ).hexdigest()
 
     boundary = f'----donation-{uuid4().hex}'
     chunks = []
@@ -135,7 +124,12 @@ def _save_image_to_cloudinary(data, extension):
     request = Request(
         f'https://api.cloudinary.com/v1_1/{cloud_name}/image/upload',
         data=b''.join(chunks),
-        headers={'Content-Type': f'multipart/form-data; boundary={boundary}'},
+        headers={
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Authorization': 'Basic ' + base64.b64encode(
+                f'{api_key}:{api_secret}'.encode('utf-8')
+            ).decode('ascii'),
+        },
         method='POST',
     )
     with urlopen(request, timeout=30) as response:
