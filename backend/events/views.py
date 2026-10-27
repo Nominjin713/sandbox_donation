@@ -1,12 +1,17 @@
 import base64
 import binascii
+import hashlib
 import json
+import logging
+import os
+import time
 from uuid import uuid4
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
 
 from django.conf import settings
 from django.core.exceptions import RequestDataTooBig, ValidationError
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.db.models import Count, Exists, OuterRef, Value, BooleanField, Q
 from django.utils import timezone
@@ -25,6 +30,7 @@ OPTIONAL_FIELDS = ('argahemjeeniidugaar', 'tulwiindugaar', 'tailbar')
 # ШИНЭ: зургийн талбар (create_event()-д дамжуулахгүй, тусад нь хадгална)
 IMAGE_FIELD = 'zurag'
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+logger = logging.getLogger(__name__)
 
 
 def event_data(event, user=None):
@@ -66,8 +72,87 @@ def _image_extension(data):
 
 # ШИНЭ: зөвхөн манай серверт байршуулсан зургийг хүлээн авна
 def _is_uploaded_image(request, url):
-    prefix = request.build_absolute_uri(settings.MEDIA_URL + 'events/')
-    return url.startswith(prefix) and '..' not in url
+    if not isinstance(url, str) or '..' in url:
+        return False
+    local_prefix = request.build_absolute_uri(settings.MEDIA_URL + 'events/')
+    if url.startswith(local_prefix):
+        return True
+
+    cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
+    parsed_config = urlsplit(cloudinary_url)
+    cloud_name = parsed_config.hostname
+    if not cloud_name:
+        return False
+    parsed_image = urlsplit(url)
+    return (
+        parsed_image.scheme == 'https'
+        and parsed_image.hostname == 'res.cloudinary.com'
+        and parsed_image.path.startswith(f'/{cloud_name}/image/upload/')
+    )
+
+
+def _save_image_to_cloudinary(data, extension):
+    cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
+    config = urlsplit(cloudinary_url)
+    cloud_name = config.hostname
+    api_key = config.username
+    api_secret = config.password
+    if not all((cloud_name, api_key, api_secret)):
+        raise ValueError('CLOUDINARY_URL is not configured.')
+
+    timestamp = str(int(time.time()))
+    public_id = uuid4().hex
+    fields = {
+        'folder': 'events',
+        'public_id': public_id,
+        'timestamp': timestamp,
+        'api_key': api_key,
+    }
+    signature_params = '&'.join(
+        f'{key}={fields[key]}' for key in sorted(('folder', 'public_id', 'timestamp'))
+    )
+    fields['signature'] = hashlib.sha1(
+        f'{signature_params}{api_secret}'.encode('utf-8')
+    ).hexdigest()
+
+    boundary = f'----donation-{uuid4().hex}'
+    chunks = []
+    for key, value in fields.items():
+        chunks.extend((
+            f'--{boundary}\r\n'.encode(),
+            f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode(),
+            str(value).encode('utf-8'),
+            b'\r\n',
+        ))
+    chunks.extend((
+        f'--{boundary}\r\n'.encode(),
+        f'Content-Disposition: form-data; name="file"; filename="{public_id}.{extension}"\r\n'.encode(),
+        f'Content-Type: image/{"jpeg" if extension == "jpg" else extension}\r\n\r\n'.encode(),
+        data,
+        b'\r\n',
+        f'--{boundary}--\r\n'.encode(),
+    ))
+    request = Request(
+        f'https://api.cloudinary.com/v1_1/{cloud_name}/image/upload',
+        data=b''.join(chunks),
+        headers={'Content-Type': f'multipart/form-data; boundary={boundary}'},
+        method='POST',
+    )
+    with urlopen(request, timeout=30) as response:
+        result = json.loads(response.read())
+    secure_url = result.get('secure_url')
+    if not isinstance(secure_url, str) or not _is_uploaded_image_url(secure_url, cloud_name):
+        raise ValueError('Cloudinary returned an invalid image URL.')
+    return secure_url
+
+
+def _is_uploaded_image_url(url, cloud_name):
+    parsed = urlsplit(url)
+    return (
+        parsed.scheme == 'https'
+        and parsed.hostname == 'res.cloudinary.com'
+        and parsed.path.startswith(f'/{cloud_name}/image/upload/')
+    )
 
 
 # ШИНЭ: зураг байршуулах
@@ -98,8 +183,16 @@ def upload_image(request):
     extension = _image_extension(data)
     if extension is None:
         return JsonResponse({'message': 'Зөвхөн JPG, PNG, WEBP, GIF зураг оруулна уу.'}, status=400)
-    name = default_storage.save(f'events/{uuid4().hex}.{extension}', ContentFile(data))
-    url = request.build_absolute_uri(default_storage.url(name))
+    try:
+        url = _save_image_to_cloudinary(data, extension)
+    except ValueError as exc:
+        if str(exc) == 'CLOUDINARY_URL is not configured.':
+            return JsonResponse({'message': 'Зураг хадгалах Cloudinary тохиргоо хийгдээгүй байна.'}, status=503)
+        logger.exception('Cloudinary returned an invalid upload response.')
+        return JsonResponse({'message': 'Зургийг хадгалах үйлчилгээ алдаа буцаалаа.'}, status=502)
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        logger.exception('Cloudinary image upload failed.')
+        return JsonResponse({'message': 'Зураг хадгалах үйлчилгээтэй холбогдож чадсангүй.'}, status=502)
     return JsonResponse({'url': url}, status=201)
 
 
