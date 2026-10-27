@@ -90,8 +90,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  bool _loggingOut = false;
-
   @override
   void dispose() {
     if (widget.authService == null) _authService.close();
@@ -105,25 +103,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (mounted && session != null) setState(() {});
-  }
-
-  Future<void> _logout() async {
-    if (_loggingOut || _session == null) return;
-    setState(() => _loggingOut = true);
-    try {
-      await _authService.logout(_session!.token);
-      if (mounted) {
-        setState(() {});
-        _loadEvents();
-      }
-    } on AuthException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
-      }
-    } finally {
-      if (mounted) setState(() => _loggingOut = false);
-    }
   }
 
   Future<void> _openEvent(EventRecord event) async {
@@ -159,11 +138,9 @@ class _HomePageState extends State<HomePage> {
               onEvents: _openEvents,
               onLogin: () => _openAuth(),
               onRegister: () => _openAuth(register: true),
-              onLogout: _logout,
               onCreate: _openCreate,
               onRetry: _loadEvents,
               onOpenEvent: _openEvent,
-              loggingOut: _loggingOut,
             );
 
             if (!desktop) return content;
@@ -542,11 +519,9 @@ class _DashboardMain extends StatelessWidget {
     required this.onEvents,
     required this.onLogin,
     required this.onRegister,
-    required this.onLogout,
     required this.onCreate,
     required this.onRetry,
     required this.onOpenEvent,
-    required this.loggingOut,
   });
 
   final AuthService authService; // ШИНЭ
@@ -555,9 +530,8 @@ class _DashboardMain extends StatelessWidget {
   final String? error;
   final bool signedIn;
   final String userName;
-  final VoidCallback onEvents, onLogin, onRegister, onLogout, onCreate, onRetry;
+  final VoidCallback onEvents, onLogin, onRegister, onCreate, onRetry;
   final ValueChanged<EventRecord> onOpenEvent;
-  final bool loggingOut;
 
   static const categories = [
     'Бүгд',
@@ -636,13 +610,8 @@ class _DashboardMain extends StatelessWidget {
                         style: const TextStyle(color: darkBlue, fontSize: 12),
                       ),
                     ),
-                  // ШИНЭ: профайл хуудас нээх товч
-                  ProfileButton(authService: authService),
-                  IconButton(
-                    tooltip: 'Гарах',
-                    onPressed: loggingOut ? null : onLogout,
-                    icon: const Icon(Icons.logout_rounded, color: primaryBlue),
-                  ),
+                  // Профайл товч (гарах товч профайл хуудас дотор байгаа)
+                  ProfileButton(authService: authService, onClosed: onRetry),
                 ] else ...[
                   TextButton(onPressed: onLogin, child: const Text('Нэвтрэх')),
                   const SizedBox(width: 3),

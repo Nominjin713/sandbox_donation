@@ -126,6 +126,7 @@ class _EventListPageState extends State<EventListPage> {
             ? ''
             : categoryCode(_selectedCategory),
         offset: more ? _nextOffset! : 0,
+        upcoming: true, // ШИНЭ: зөвхөн дуусаагүй (нээлттэй) үйл ажиллагаа
       );
       if (mounted && version == _version) {
         setState(() {

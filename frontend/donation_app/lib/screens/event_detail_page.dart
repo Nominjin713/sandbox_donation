@@ -12,6 +12,14 @@ const primaryBlue = Color(0xFF7353BA);
 const darkBlue = Color(0xFF39275F);
 const backgroundBlue = Color(0xFFF8F6FF);
 
+// ШИНЭ: зураггүй үйл ажиллагаанд ангиллын зургийг харуулна
+const Map<String, String> _categoryAssets = {
+  'environment': 'assets/images/environment.jpg',
+  'social': 'assets/images/social.jpg',
+  'education': 'assets/images/education.jpg',
+  'cleanup': 'assets/images/cleanup.jpg',
+};
+
 class EventDetailPage extends StatefulWidget {
   const EventDetailPage({super.key, required this.event, this.authService});
 
@@ -603,84 +611,167 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
   }
 
-  Widget _buildHeader(EventRecord event) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF8C70C8), Color(0xFF60429F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  // ШИНЭ: дээд хэсгийн зураг (эвентийн зураг, байхгүй бол ангиллын зураг)
+  Widget _headerImage(EventRecord event) {
+    final fallback = Image.asset(
+      _categoryAssets[event.category] ?? 'assets/images/vol.jpg',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF8C70C8), Color(0xFF60429F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: primaryBlue.withValues(alpha: 0.20),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.20),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Text(
-              eventCategories[event.category] ?? event.category,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    );
+
+    final url = event.imageUrl;
+    if (url == null) return fallback;
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+      loadingBuilder: (context, child, progress) => progress == null
+          ? child
+          : const ColoredBox(color: Color(0xFFE9E2F7)),
+      errorBuilder: (context, error, stackTrace) => fallback,
+    );
+  }
+
+  // ШИНЭ: зурагтай дээд хэсэг. Зургийн доод талд гарчиг, огноо, байршил.
+  Widget _buildHeader(EventRecord event) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minHeight = (constraints.maxWidth * 0.62).clamp(280.0, 420.0);
+
+        return Container(
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          constraints: BoxConstraints(minHeight: minHeight),
+          decoration: BoxDecoration(
+            color: primaryBlue,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: primaryBlue.withValues(alpha: 0.20),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 18),
-          Text(
-            event.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 27,
-              height: 1.3,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
+          child: Stack(
+            alignment: Alignment.bottomLeft,
             children: [
-              const Icon(Icons.calendar_month, color: Colors.white, size: 19),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  EventRecord.dateLabel(event.startsAt),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+              Positioned.fill(child: _headerImage(event)),
+              // Текст уншигдахуйц болгох бараан нил ягаан уусгалт
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x33000000),
+                        Color(0x0039275F),
+                        Color(0xE639275F),
+                      ],
+                      stops: [0.0, 0.3, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Ангилал
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    eventCategories[event.category] ?? event.category,
+                    style: const TextStyle(
+                      color: primaryBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              // Гарчиг, огноо, байршил
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 70, 22, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        height: 1.25,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(color: Color(0x66000000), blurRadius: 8),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_month,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            EventRecord.dateLabel(event.startsAt),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                color: Colors.white,
-                size: 19,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  event.location,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
