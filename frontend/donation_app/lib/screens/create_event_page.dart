@@ -10,10 +10,10 @@ import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import 'auth_page.dart';
 
-const Color primaryBlue = Color(0xFF4389F5);
-const Color darkBlue = Color(0xFF19345C);
-const Color backgroundBlue = Color(0xFFF2F7FF);
-const Color borderBlue = Color(0xFFDCE8FF);
+const Color primaryBlue = Color(0xFF7353BA);
+const Color darkBlue = Color(0xFF39275F);
+const Color backgroundBlue = Color(0xFFF8F6FF);
+const Color borderBlue = Color(0xFFE7E0F3);
 
 class CreateEventPage extends StatefulWidget {
   const CreateEventPage({
@@ -35,7 +35,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
   late final _eventId = widget.initialEvent?.id ?? EventService.newId();
 
   late final _organizationController = TextEditingController(
-    text: widget.initialEvent?.organization ??
+    text:
+        widget.initialEvent?.organization ??
         widget.authService.currentSession?.name ??
         '',
   );
@@ -68,6 +69,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
   Uint8List? _imageBytes;
   String? _imageName;
   String? _uploadedImageUrl;
+
+  String get _locationValue {
+    final enteredLocation = _locationController.text.trim();
+    if (enteredLocation.isNotEmpty) return enteredLocation;
+
+    final point = _selectedLocation;
+    if (point == null) return '';
+    return '${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}';
+  }
 
   @override
   void initState() {
@@ -154,7 +164,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final now = DateTime.now();
     final initial = end
         ? _selectedEndDate ??
-            (_selectedDate ?? now).add(const Duration(hours: 1))
+              (_selectedDate ?? now).add(const Duration(hours: 1))
         : _selectedDate ?? now;
 
     final firstDay = DateTime(now.year, now.month, now.day);
@@ -204,7 +214,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     return Scaffold(
       backgroundColor: backgroundBlue,
       appBar: AppBar(
-        backgroundColor: backgroundBlue,
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
@@ -233,191 +243,206 @@ class _CreateEventPageState extends State<CreateEventPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 25),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildBanner(),
-                    const SizedBox(height: 24),
-
-                    _buildLabel('Үйл ажиллагааны зураг', required: false),
-                    const SizedBox(height: 9),
-                    _buildImagePicker(),
-                    const SizedBox(height: 22),
-
-                    _buildLabel('Зохион байгуулагч / байгууллага'),
-                    const SizedBox(height: 9),
-                    _buildField(
-                      controller: _organizationController,
-                      hint: 'Зохион байгуулагчийн нэр',
-                      icon: Icons.business_outlined,
-                      validator: (value) =>
-                          value == null ||
-                                  value.trim().isEmpty ||
-                                  value.trim().length > 50
-                              ? '1–50 тэмдэгттэй нэр оруулна уу.'
-                              : null,
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: borderBlue),
+                  boxShadow: [
+                    BoxShadow(
+                      color: darkBlue.withValues(alpha: 0.04),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
-                    const SizedBox(height: 22),
+                  ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBanner(),
+                      const SizedBox(height: 24),
 
-                    _buildLabel('Үйл ажиллагааны нэр'),
-                    const SizedBox(height: 9),
-                    _buildField(
-                      controller: _titleController,
-                      hint: 'Жишээ: Мод тарих өдөрлөг',
-                      icon: Icons.flag_rounded,
-                      validator: (value) {
-                        if (value == null ||
-                            value.trim().isEmpty ||
-                            value.trim().length > 200) {
-                          return 'Үйл ажиллагааны нэрээ оруулна уу';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 22),
+                      _buildLabel('Үйл ажиллагааны зураг', required: false),
+                      const SizedBox(height: 9),
+                      _buildImagePicker(),
+                      const SizedBox(height: 22),
 
-                    _buildLabel('Ангилал'),
-                    const SizedBox(height: 10),
-                    _buildCategorySelector(),
-                    const SizedBox(height: 22),
+                      _buildLabel('Зохион байгуулагч / байгууллага'),
+                      const SizedBox(height: 9),
+                      _buildField(
+                        controller: _organizationController,
+                        hint: 'Зохион байгуулагчийн нэр',
+                        icon: Icons.business_outlined,
+                        validator: (value) =>
+                            value == null ||
+                                value.trim().isEmpty ||
+                                value.trim().length > 50
+                            ? '1–50 тэмдэгттэй нэр оруулна уу.'
+                            : null,
+                      ),
+                      const SizedBox(height: 22),
 
-                    _buildLabel('Дэлгэрэнгүй тайлбар'),
-                    const SizedBox(height: 9),
-                    _buildField(
-                      controller: _descriptionController,
-                      hint: 'Үйл ажиллагааны зорилго, хийх ажлаа бичээрэй...',
-                      icon: Icons.description_rounded,
-                      maxLines: 5,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Тайлбар оруулна уу';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 22),
+                      _buildLabel('Үйл ажиллагааны нэр'),
+                      const SizedBox(height: 9),
+                      _buildField(
+                        controller: _titleController,
+                        hint: 'Жишээ: Мод тарих өдөрлөг',
+                        icon: Icons.flag_rounded,
+                        validator: (value) {
+                          if (value == null ||
+                              value.trim().isEmpty ||
+                              value.trim().length > 200) {
+                            return 'Үйл ажиллагааны нэрээ оруулна уу';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 22),
 
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        if (constraints.maxWidth < 440) {
-                          return Column(
+                      _buildLabel('Ангилал'),
+                      const SizedBox(height: 10),
+                      _buildCategorySelector(),
+                      const SizedBox(height: 22),
+
+                      _buildLabel('Дэлгэрэнгүй тайлбар'),
+                      const SizedBox(height: 9),
+                      _buildField(
+                        controller: _descriptionController,
+                        hint: 'Үйл ажиллагааны зорилго, хийх ажлаа бичээрэй...',
+                        icon: Icons.description_rounded,
+                        maxLines: 5,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Тайлбар оруулна уу';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 22),
+
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth < 440) {
+                            return Column(
+                              children: [
+                                _dateField(),
+                                const SizedBox(height: 20),
+                                _locationField(),
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _dateField(),
-                              const SizedBox(height: 20),
-                              _locationField(),
+                              Expanded(child: _dateField()),
+                              const SizedBox(width: 14),
+                              Expanded(child: _locationField()),
                             ],
                           );
-                        }
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _dateField()),
-                            const SizedBox(width: 14),
-                            Expanded(child: _locationField()),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 22),
-
-                    _dateField(end: true),
-                    const SizedBox(height: 22),
-
-                    _buildLabel('Оролцогчдын тоо'),
-                    const SizedBox(height: 9),
-                    _buildField(
-                      controller: _slotsController,
-                      hint: 'Жишээ: 30',
-                      icon: Icons.groups_rounded,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Оролцогчдын тоог оруулна уу';
-                        }
-
-                        final count = int.tryParse(value.trim());
-
-                        if (count == null ||
-                            count <= 0 ||
-                            count > 2147483647) {
-                          return '1–2147483647 бүхэл тоо оруулна уу';
-                        }
-
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: primaryBlue,
-                          size: 18,
-                        ),
-                        SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            'Хэдэн сайн дурын ажилтан оролцохыг зааж өгнө үү.',
-                            style: TextStyle(
-                              color: Color(0xFF6E84A8),
-                              fontSize: 12,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
+                        },
                       ),
+                      const SizedBox(height: 22),
 
-                    _buildPublishButton(),
-                    const SizedBox(height: 17),
+                      _dateField(end: true),
+                      const SizedBox(height: 22),
 
-                    const Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      _buildLabel('Оролцогчдын тоо'),
+                      const SizedBox(height: 9),
+                      _buildField(
+                        controller: _slotsController,
+                        hint: 'Жишээ: 30',
+                        icon: Icons.groups_rounded,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Оролцогчдын тоог оруулна уу';
+                          }
+
+                          final count = int.tryParse(value.trim());
+
+                          if (count == null ||
+                              count <= 0 ||
+                              count > 2147483647) {
+                            return '1–2147483647 бүхэл тоо оруулна уу';
+                          }
+
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 10),
+
+                      const Row(
                         children: [
                           Icon(
-                            Icons.verified_user_rounded,
+                            Icons.info_outline_rounded,
                             color: primaryBlue,
-                            size: 17,
+                            size: 18,
                           ),
                           SizedBox(width: 7),
-                          Flexible(
+                          Expanded(
                             child: Text(
-                              'Сайн үйлсийг хамтдаа бүтээцгээе 💙',
-                              textAlign: TextAlign.center,
+                              'Хэдэн сайн дурын ажилтан оролцохыг зааж өгнө үү.',
                               style: TextStyle(
-                                color: Color(0xFF7185A5),
+                                color: Color(0xFF6E84A8),
                                 fontSize: 12,
+                                height: 1.5,
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 28),
+
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+
+                      _buildPublishButton(),
+                      const SizedBox(height: 17),
+
+                      const Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.verified_user_rounded,
+                              color: primaryBlue,
+                              size: 17,
+                            ),
+                            SizedBox(width: 7),
+                            Flexible(
+                              child: Text(
+                                'Сайн үйлсийг хамтдаа бүтээцгээе 💙',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF7185A5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -449,7 +474,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   width: 62,
                   height: 62,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5F0FF),
+                    color: const Color(0xFFF0EBFA),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
@@ -470,10 +495,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 const SizedBox(height: 4),
                 const Text(
                   'JPG эсвэл PNG, 5MB хүртэл',
-                  style: TextStyle(
-                    color: Color(0xFF7185A5),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
                 ),
               ],
             ),
@@ -504,10 +526,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    icon: const Icon(
-                      Icons.photo_library_rounded,
-                      size: 18,
-                    ),
+                    icon: const Icon(Icons.photo_library_rounded, size: 18),
                     label: const Text(
                       'Солих',
                       style: TextStyle(fontWeight: FontWeight.w800),
@@ -540,31 +559,24 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE0EDFF),
-            Color(0xFFF2F7FF),
-            Color(0xFFE5F5FF),
-          ],
+          colors: [Color(0xFF7353BA), Color(0xFF60429F), Color(0xFF39275F)],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: const Color(0xFFFFD166), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Text(
               '✦  VOLUNTEER HUB',
               style: TextStyle(
-                color: primaryBlue,
+                color: const Color(0xFFFFD166),
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1,
@@ -575,7 +587,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           const Text(
             'Шинэ үйл ажиллагаа\nүүсгэцгээе!',
             style: TextStyle(
-              color: darkBlue,
+              color: Colors.white,
               fontSize: 27,
               fontWeight: FontWeight.w900,
               height: 1.25,
@@ -585,11 +597,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           const SizedBox(height: 11),
           const Text(
             'Санаачилгаа хуваалцаж, бусдад урам зориг өгөөрэй.',
-            style: TextStyle(
-              color: Color(0xFF617A9E),
-              fontSize: 13,
-              height: 1.7,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.7),
           ),
           const SizedBox(height: 16),
           Align(
@@ -598,12 +606,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
               width: 78,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: const Color(0xFFFFD166),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Icon(
                 Icons.event_available_rounded,
-                color: primaryBlue,
+                color: darkBlue,
                 size: 42,
               ),
             ),
@@ -638,10 +646,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           else
             const Text(
               '(заавал биш)',
-              style: TextStyle(
-                color: Color(0xFF94A5C0),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Color(0xFF94A5C0), fontSize: 12),
             ),
         ],
       ),
@@ -704,10 +709,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
-          borderSide: const BorderSide(
-            color: primaryBlue,
-            width: 1.7,
-          ),
+          borderSide: const BorderSide(color: primaryBlue, width: 1.7),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
@@ -715,10 +717,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(19),
-          borderSide: const BorderSide(
-            color: Colors.redAccent,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
         errorStyle: const TextStyle(fontSize: 11),
       ),
@@ -746,10 +745,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         children: [
           const Text(
             'Үйл ажиллагааны төрлөө сонгоно уу',
-            style: TextStyle(
-              color: Color(0xFF7185A5),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -773,9 +769,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFFE5F0FF)
-                        : const Color(0xFFFAFCFF),
+                    color: selected ? const Color(0xFFF0EBFA) : Colors.white,
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
                       color: selected ? primaryBlue : borderBlue,
@@ -788,9 +782,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       Icon(
                         icons[index],
                         size: 17,
-                        color: selected
-                            ? primaryBlue
-                            : const Color(0xFF8295B5),
+                        color: selected ? primaryBlue : const Color(0xFF8295B5),
                       ),
                       const SizedBox(width: 7),
                       Text(
@@ -881,7 +873,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
           hint: 'Үйл ажиллагаа болох газрын нэр',
           icon: Icons.location_on_rounded,
           validator: (value) {
-            if (value == null || value.trim().isEmpty) {
+            if ((value == null || value.trim().isEmpty) &&
+                _selectedLocation == null) {
               return 'Байршлаа оруулна уу';
             }
             return null;
@@ -907,7 +900,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFE7F1FF),
+              color: const Color(0xFFF0EBFA),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -932,11 +925,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       height: 59,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF68A6FF),
-            Color(0xFF4389F5),
-            Color(0xFF326EF0),
-          ],
+          colors: [Color(0xFF9B83D2), Color(0xFF7353BA), Color(0xFF60429F)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -972,12 +961,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
           _isPublishing
               ? 'Түр хүлээнэ үү...'
               : widget.initialEvent == null
-                  ? 'Үйл ажиллагаа нийтлэх'
-                  : 'Өөрчлөлтийг хадгалах',
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-          ),
+              ? 'Үйл ажиллагаа нийтлэх'
+              : 'Өөрчлөлтийг хадгалах',
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
     );
@@ -1008,10 +994,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       final bytes = _imageBytes;
 
       if (bytes != null && imageUrl == null) {
-        imageUrl = await _events.uploadImage(
-          bytes,
-          _imageName ?? 'image.jpg',
-        );
+        imageUrl = await _events.uploadImage(bytes, _imageName ?? 'image.jpg');
         _uploadedImageUrl = imageUrl;
       }
 
@@ -1024,7 +1007,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               description: _descriptionController.text,
               organization: _organizationController.text,
               category: categoryCode(_category),
-              location: _locationController.text,
+              location: _locationValue,
               startsAt: _selectedDate!,
               endsAt: _selectedEndDate!,
               capacity: int.parse(_slotsController.text.trim()),
@@ -1036,7 +1019,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               description: _descriptionController.text,
               organization: _organizationController.text,
               category: categoryCode(_category),
-              location: _locationController.text,
+              location: _locationValue,
               startsAt: _selectedDate!,
               endsAt: _selectedEndDate!,
               capacity: int.parse(_slotsController.text.trim()),
@@ -1059,8 +1042,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
         if (mounted && widget.authService.currentSession != null) {
           setState(() {
-            _error =
-                'Нэвтэрлээ. Мэдээллээ шалгаад дахин нийтлээрэй.';
+            _error = 'Нэвтэрлээ. Мэдээллээ шалгаад дахин нийтлээрэй.';
           });
         }
       }
@@ -1080,10 +1062,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
 /// Арга хэмжээний байршлыг газрын зураг дээр сонгох хуудас.
 class LocationPickerPage extends StatefulWidget {
-  const LocationPickerPage({
-    super.key,
-    required this.initialLocation,
-  });
+  const LocationPickerPage({super.key, required this.initialLocation});
 
   final LatLng initialLocation;
 
@@ -1119,10 +1098,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
               'Газрын зураг дээр үйл ажиллагаа болох газраа '
               'товшоод тэмдэглэгээг байрлуулна уу.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: darkBlue,
-                height: 1.4,
-              ),
+              style: TextStyle(color: darkBlue, height: 1.4),
             ),
           ),
           Expanded(
@@ -1136,8 +1112,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.volunteerhub.app',
                 ),
                 MarkerLayer(
@@ -1156,9 +1131,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 ),
                 RichAttributionWidget(
                   attributions: [
-                    TextSourceAttribution(
-                      '© OpenStreetMap contributors',
-                    ),
+                    TextSourceAttribution('© OpenStreetMap contributors'),
                   ],
                 ),
               ],
@@ -1190,10 +1163,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                     height: 50,
                     child: FilledButton.icon(
                       onPressed: () {
-                        Navigator.pop<LatLng>(
-                          context,
-                          _selectedPoint,
-                        );
+                        Navigator.pop<LatLng>(context, _selectedPoint);
                       },
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Байршил баталгаажуулах'),

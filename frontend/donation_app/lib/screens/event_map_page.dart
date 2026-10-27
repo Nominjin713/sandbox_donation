@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -26,19 +25,14 @@ class _EventMapPageState extends State<EventMapPage> {
   @override
   void initState() {
     super.initState();
-    selectedPoint = LatLng(
-      widget.latitude,
-      widget.longitude,
-    );
+    selectedPoint = LatLng(widget.latitude, widget.longitude);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
-      appBar: AppBar(
-        title: const Text('Үйл ажиллагааны байршил'),
-      ),
+      backgroundColor: const Color(0xFFF8F6FF),
+      appBar: AppBar(title: const Text('Үйл ажиллагааны байршил')),
       body: Column(
         children: [
           Expanded(
@@ -55,8 +49,7 @@ class _EventMapPageState extends State<EventMapPage> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.donation_app',
                 ),
                 MarkerLayer(
@@ -67,7 +60,7 @@ class _EventMapPageState extends State<EventMapPage> {
                       height: 55,
                       child: const Icon(
                         Icons.location_pin,
-                        color: Color(0xFF4389F5),
+                        color: Color(0xFF7353BA),
                         size: 48,
                       ),
                     ),
@@ -81,19 +74,14 @@ class _EventMapPageState extends State<EventMapPage> {
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Үйл ажиллагаа болох газар',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(widget.location),
@@ -119,10 +107,7 @@ class _EventMapPageState extends State<EventMapPage> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: locationConfirmed
-                        ? () => Navigator.pop(
-                              context,
-                              selectedPoint,
-                            )
+                        ? () => Navigator.pop(context, selectedPoint)
                         : null,
                     icon: const Icon(Icons.check_circle_outline),
                     label: const Text('Байршлыг сонгох'),

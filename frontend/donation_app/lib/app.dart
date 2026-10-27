@@ -11,12 +11,15 @@ class MyApp extends StatelessWidget {
     title: 'Хандив',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087F6B)),
-      scaffoldBackgroundColor: const Color(0xFFF3F7F6),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF7353BA),
+        secondary: const Color(0xFFFFD166),
+      ),
+      scaffoldBackgroundColor: const Color(0xFFF8F6FF),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
         filled: true,
-        fillColor: Color(0xFFF8FAF9),
+        fillColor: Color(0xFFF8F6FF),
       ),
     ),
     home: HomePage(authService: authService),

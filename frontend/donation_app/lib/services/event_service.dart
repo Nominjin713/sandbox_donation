@@ -149,7 +149,7 @@ class EventService {
       throw const AuthException('Зургийн хэмжээ 5MB-аас хэтрэхгүй байх ёстой.');
     }
     final data = await api.request(
-      '/events/upload-image',
+      '/events/upload-image/',
       body: {'filename': filename, 'data': base64Encode(bytes)},
       post: true,
     );
@@ -242,10 +242,7 @@ class EventService {
   }
 
   Future<void> delete(String id) async {
-    await api.request(
-      '/events/${Uri.encodeComponent(id)}/delete',
-      post: true,
-    );
+    await api.request('/events/${Uri.encodeComponent(id)}/delete', post: true);
   }
 
   Future<EventRecord> participate(String id, {bool cancel = false}) async {

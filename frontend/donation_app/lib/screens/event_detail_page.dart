@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -9,16 +8,12 @@ import '../services/event_service.dart';
 import 'auth_page.dart';
 import 'create_event_page.dart';
 
-const primaryBlue = Color(0xFF4389F5);
-const darkBlue = Color(0xFF19345C);
-const backgroundBlue = Color(0xFFF4F8FF);
+const primaryBlue = Color(0xFF7353BA);
+const darkBlue = Color(0xFF39275F);
+const backgroundBlue = Color(0xFFF8F6FF);
 
 class EventDetailPage extends StatefulWidget {
-  const EventDetailPage({
-    super.key,
-    required this.event,
-    this.authService,
-  });
+  const EventDetailPage({super.key, required this.event, this.authService});
 
   final Map<String, String> event;
   final AuthService? authService;
@@ -86,9 +81,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
     if (_api.currentSession == null) {
       await Navigator.of(context).push<AuthSession>(
-        MaterialPageRoute(
-          builder: (_) => AuthPage(authService: _api),
-        ),
+        MaterialPageRoute(builder: (_) => AuthPage(authService: _api)),
       );
 
       if (!mounted || _api.currentSession == null) return;
@@ -97,10 +90,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
     setState(() => _busy = true);
 
     try {
-      final result = await _service.participate(
-        _event!.id,
-        cancel: cancel,
-      );
+      final result = await _service.participate(_event!.id, cancel: cancel);
 
       if (!mounted) return;
 
@@ -119,15 +109,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
     } on AuthException catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
 
       if (error.statusCode == 401) {
         await Navigator.of(context).push<AuthSession>(
-          MaterialPageRoute(
-            builder: (_) => AuthPage(authService: _api),
-          ),
+          MaterialPageRoute(builder: (_) => AuthPage(authService: _api)),
         );
 
         if (!mounted) return;
@@ -147,10 +134,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
     final updated = await Navigator.of(context).push<EventRecord>(
       MaterialPageRoute(
-        builder: (_) => CreateEventPage(
-          authService: _api,
-          initialEvent: event,
-        ),
+        builder: (_) => CreateEventPage(authService: _api, initialEvent: event),
       ),
     );
 
@@ -166,9 +150,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Үйл ажиллагаа устгах уу?'),
         content: Text(
           '“${event.title}”-ийг устгавал оролцогчдын бүртгэл мөн устна.',
@@ -179,9 +161,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
             child: const Text('Болих'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Устгах'),
           ),
@@ -201,9 +181,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
       }
     } on AuthException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) {
@@ -228,9 +207,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
     if (!mounted || result == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Газрын зураг дээрх байршлыг сонголоо.'),
-      ),
+      const SnackBar(content: Text('Газрын зураг дээрх байршлыг сонголоо.')),
     );
   }
 
@@ -238,12 +215,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
   Widget build(BuildContext context) {
     final event = _event;
 
-    final closed = event != null &&
-        (event.status != 'open' ||
-            !event.endsAt.isAfter(DateTime.now()));
+    final closed =
+        event != null &&
+        (event.status != 'open' || !event.endsAt.isAfter(DateTime.now()));
 
-    final full = event != null &&
-        event.participantCount >= event.capacity;
+    final full = event != null && event.participantCount >= event.capacity;
 
     return Scaffold(
       backgroundColor: backgroundBlue,
@@ -253,10 +229,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         elevation: 0,
         title: const Text(
           'Үйл ажиллагааны дэлгэрэнгүй',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -281,9 +254,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     if (!context.mounted) return;
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Мэдээллийг хууллаа.'),
-                      ),
+                      const SnackBar(content: Text('Мэдээллийг хууллаа.')),
                     );
                   },
             icon: const Icon(Icons.share_outlined),
@@ -299,10 +270,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
               children: [
-                if (_loading)
-                  const LinearProgressIndicator(
-                    color: primaryBlue,
-                  ),
+                if (_loading) const LinearProgressIndicator(color: primaryBlue),
 
                 if (_error != null) ...[
                   _card(
@@ -314,10 +282,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           size: 42,
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                        ),
+                        Text(_error!, textAlign: TextAlign.center),
                         TextButton(
                           onPressed: _load,
                           child: const Text('Дахин оролдох'),
@@ -418,11 +383,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: primaryBlue.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                    borderRadius:
-                                        BorderRadius.circular(14),
+                                    color: primaryBlue.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: const Icon(
                                     Icons.location_on,
@@ -498,9 +460,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               ),
                               child: Text(
                                 '/ ${event.capacity} хүн',
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                ),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ),
                             const Spacer(),
@@ -525,10 +485,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             color: primaryBlue,
                             value: event.capacity <= 0
                                 ? 0
-                                : (event.participantCount /
-                                        event.capacity)
-                                    .clamp(0.0, 1.0)
-                                    .toDouble(),
+                                : (event.participantCount / event.capacity)
+                                      .clamp(0.0, 1.0)
+                                      .toDouble(),
                           ),
                         ),
 
@@ -538,12 +497,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           event.isJoined
                               ? 'Та энэ үйл ажиллагаанд бүртгэлтэй.'
                               : full
-                                  ? 'Оролцогчдын тоо дүүрсэн байна.'
-                                  : 'Үлдсэн байр: '
-                                      '${(event.capacity - event.participantCount).clamp(0, event.capacity)}',
-                          style: const TextStyle(
-                            color: Color(0xFF53647D),
-                          ),
+                              ? 'Оролцогчдын тоо дүүрсэн байна.'
+                              : 'Үлдсэн байр: '
+                                    '${(event.capacity - event.participantCount).clamp(0, event.capacity)}',
+                          style: const TextStyle(color: Color(0xFF53647D)),
                         ),
                       ],
                     ),
@@ -560,13 +517,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Засах'),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               foregroundColor: primaryBlue,
-                              side: const BorderSide(
-                                color: primaryBlue,
-                              ),
+                              side: const BorderSide(color: primaryBlue),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -580,13 +533,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             icon: const Icon(Icons.delete_outline),
                             label: const Text('Устгах'),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               foregroundColor: Colors.red,
-                              side: const BorderSide(
-                                color: Colors.red,
-                              ),
+                              side: const BorderSide(color: Colors.red),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -601,15 +550,15 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   SizedBox(
                     height: 54,
                     child: FilledButton.icon(
-                      onPressed: _busy ||
+                      onPressed:
+                          _busy ||
                               _loading ||
                               (!event.isJoined && (closed || full))
                           ? null
                           : _participate,
                       style: FilledButton.styleFrom(
                         backgroundColor: primaryBlue,
-                        disabledBackgroundColor:
-                            const Color(0xFFCFD8E8),
+                        disabledBackgroundColor: const Color(0xFFCFD8E8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -632,12 +581,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
                         _busy
                             ? 'Түр хүлээнэ үү...'
                             : event.isJoined
-                                ? 'Оролцохоо цуцлах'
-                                : closed
-                                    ? 'Бүртгэл хаагдсан'
-                                    : full
-                                        ? 'Бүртгэл дүүрсэн'
-                                        : 'Оролцох',
+                            ? 'Оролцохоо цуцлах'
+                            : closed
+                            ? 'Бүртгэл хаагдсан'
+                            : full
+                            ? 'Бүртгэл дүүрсэн'
+                            : 'Оролцох',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -660,10 +609,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF4389F5),
-            Color(0xFF245FC5),
-          ],
+          colors: [Color(0xFF8C70C8), Color(0xFF60429F)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -680,10 +626,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.20),
               borderRadius: BorderRadius.circular(30),
@@ -709,19 +652,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
           const SizedBox(height: 18),
           Row(
             children: [
-              const Icon(
-                Icons.calendar_month,
-                color: Colors.white,
-                size: 19,
-              ),
+              const Icon(Icons.calendar_month, color: Colors.white, size: 19),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   EventRecord.dateLabel(event.startsAt),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ),
             ],
@@ -738,10 +674,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               Expanded(
                 child: Text(
                   event.location,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ),
             ],
@@ -758,9 +691,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFEAF0FA),
-        ),
+        border: Border.all(color: const Color(0xFFEAF0FA)),
         boxShadow: [
           BoxShadow(
             color: darkBlue.withValues(alpha: 0.035),
@@ -773,11 +704,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
   }
 
-  Widget _info(
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _info(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
@@ -789,11 +716,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               color: const Color(0xFFF0F6FF),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: primaryBlue,
-              size: 21,
-            ),
+            child: Icon(icon, color: primaryBlue, size: 21),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -802,10 +725,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -826,10 +746,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-  });
+  const _SectionTitle({required this.icon, required this.title});
 
   final IconData icon;
   final String title;
@@ -838,11 +755,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: primaryBlue,
-          size: 23,
-        ),
+        Icon(icon, color: primaryBlue, size: 23),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -885,10 +798,7 @@ class _EventMapPageState extends State<EventMapPage> {
   void initState() {
     super.initState();
 
-    _selectedPoint = LatLng(
-      widget.latitude,
-      widget.longitude,
-    );
+    _selectedPoint = LatLng(widget.latitude, widget.longitude);
   }
 
   @override
@@ -917,8 +827,7 @@ class _EventMapPageState extends State<EventMapPage> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.donation_app',
                 ),
                 MarkerLayer(
@@ -943,9 +852,7 @@ class _EventMapPageState extends State<EventMapPage> {
             padding: const EdgeInsets.fromLTRB(20, 22, 20, 26),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(26),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
             ),
             child: SafeArea(
               top: false,
@@ -963,9 +870,7 @@ class _EventMapPageState extends State<EventMapPage> {
                   const SizedBox(height: 8),
                   Text(
                     widget.location,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B),
-                    ),
+                    style: const TextStyle(color: Color(0xFF64748B)),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -973,21 +878,15 @@ class _EventMapPageState extends State<EventMapPage> {
                     '${_selectedPoint.latitude.toStringAsFixed(6)}\n'
                     'Уртраг: '
                     '${_selectedPoint.longitude.toStringAsFixed(6)}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.7,
-                    ),
+                    style: const TextStyle(fontSize: 13, height: 1.7),
                   ),
                   const SizedBox(height: 8),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
-                    controlAffinity:
-                        ListTileControlAffinity.leading,
+                    controlAffinity: ListTileControlAffinity.leading,
                     activeColor: primaryBlue,
                     value: _confirmed,
-                    title: const Text(
-                      'Байршлыг баталгаажуулсан',
-                    ),
+                    title: const Text('Байршлыг баталгаажуулсан'),
                     onChanged: (value) {
                       setState(() {
                         _confirmed = value ?? false;
@@ -1000,10 +899,7 @@ class _EventMapPageState extends State<EventMapPage> {
                     height: 50,
                     child: FilledButton.icon(
                       onPressed: _confirmed
-                          ? () => Navigator.pop(
-                                context,
-                                _selectedPoint,
-                              )
+                          ? () => Navigator.pop(context, _selectedPoint)
                           : null,
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Байршлыг сонгох'),

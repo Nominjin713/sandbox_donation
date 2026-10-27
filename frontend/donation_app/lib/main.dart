@@ -16,7 +16,11 @@ class VolunteerApp extends StatelessWidget {
       title: 'Volunteer Hub',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087765)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7353BA),
+          secondary: const Color(0xFFFFD166),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF8F6FF),
       ),
       home: const HomePage(),
     );

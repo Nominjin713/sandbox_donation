@@ -8,24 +8,18 @@ import '../services/event_service.dart';
 
 import 'event_detail_page.dart';
 
-const Color primaryBlue = Color(0xFF4389F5);
-const Color darkBlue = Color(0xFF19345C);
-const Color backgroundBlue = Color(0xFFF4F8FF);
-const Color borderBlue = Color(0xFFE3EDFC);
-const Color mutedText = Color(0xFF6C7F9D);
-const Color joinedGreen = Color(0xFF2E9E6A);
+const Color primaryBlue = Color(0xFF7353BA);
+const Color darkBlue = Color(0xFF39275F);
+const Color backgroundBlue = Color(0xFFF8F6FF);
+const Color borderBlue = Color(0xFFE7E0F3);
+const Color mutedText = Color(0xFF756D83);
+const Color joinedGreen = Color(0xFF7353BA);
 
 // ШИНЭ: хуудасны цэнхэр уусгалттай дэвсгэр (дээрээс доош цайрна)
 const LinearGradient pageGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [
-    Color(0xFF1E6FE8), // цэнхэр
-    Color(0xFF2FB4FF), // тод цэнхэр
-    Color(0xFF6FA4FF), // зөөлөн цэнхэр
-    Color(0xFF8E8CFF), // хөх (индиго)
-  ],
-  stops: [0.0, 0.35, 0.7, 1.0],
+  colors: [Color(0xFFF8F6FF), Color(0xFFF0EBFA), Color(0xFFFFF3D6)],
 );
 
 // Ангилал бүрийн зураг, icon, өнгө
@@ -40,26 +34,26 @@ class _CategoryStyle {
     'Байгаль орчин': _CategoryStyle(
       'assets/images/environment.jpg',
       Icons.park_rounded,
-      Color(0xFF35B779),
-      Color(0xFFE1F7E9),
+      primaryBlue,
+      Color(0xFFF0EBFA),
     ),
     'Нийгмийн халамж': _CategoryStyle(
       'assets/images/social.jpg',
       Icons.volunteer_activism_rounded,
-      Color(0xFFFF7596),
-      Color(0xFFFFE8EE),
+      primaryBlue,
+      Color(0xFFFFF3D6),
     ),
     'Цэвэр орчин': _CategoryStyle(
       'assets/images/cleanup.jpg',
       Icons.cleaning_services_rounded,
       primaryBlue,
-      Color(0xFFE5EEFF),
+      Color(0xFFF0EBFA),
     ),
     'Боловсрол': _CategoryStyle(
       'assets/images/education.jpg',
       Icons.menu_book_rounded,
-      Color(0xFF9676E8),
-      Color(0xFFEDE7FF),
+      primaryBlue,
+      Color(0xFFF0EBFA),
     ),
   };
 
@@ -67,7 +61,7 @@ class _CategoryStyle {
     'assets/images/other.jpg',
     Icons.favorite_rounded,
     primaryBlue,
-    Color(0xFFE5EEFF),
+    Color(0xFFF0EBFA),
   );
 
   static _CategoryStyle of(String? category) => _styles[category] ?? _other;
@@ -205,177 +199,198 @@ class _EventListPageState extends State<EventListPage> {
     final filtered = filteredEvents;
 
     // ШИНЭ: бүх хуудасны ард цэнхэр уусгалт
-    return DecoratedBox(
-      decoration: const BoxDecoration(gradient: pageGradient),
-      child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: IconButton(
-            onPressed: () => Navigator.pop(context),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: primaryBlue,
-              shape: const CircleBorder(),
-            ),
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
-        ),
-        title: const Text(
-          'Үйл ажиллагаанууд',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: 'Шинэчлэх',
-            onPressed: _loading ? null : () => _load(),
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => _load(),
-          color: primaryBlue,
-          child: CustomScrollView(
-            slivers: [
-              // HERO
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
-                  child: _buildHero(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final page = DecoratedBox(
+          decoration: const BoxDecoration(gradient: pageGradient),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: primaryBlue,
+                    shape: const CircleBorder(),
+                  ),
+                  icon: const Icon(Icons.arrow_back_rounded),
                 ),
               ),
-
-              // ХАЙЛТ + АНГИЛАЛ (гүйлгэхэд дээр наалдаж үлдэнэ)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _PinnedBar(height: 128, child: _buildFilterBar()),
+              title: const Text(
+                'Үйл ажиллагаанууд',
+                style: TextStyle(
+                  color: darkBlue,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  tooltip: 'Шинэчлэх',
+                  onPressed: _loading ? null : () => _load(),
+                  icon: const Icon(Icons.refresh_rounded, color: primaryBlue),
+                ),
+              ],
+            ),
+            body: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: () => _load(),
+                color: primaryBlue,
+                child: CustomScrollView(
+                  slivers: [
+                    // HERO
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
+                        child: _buildHero(),
+                      ),
+                    ),
 
-              // ҮР ДҮНГИЙН ГАРЧИГ
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Танд зориулсан боломжууд',
-                          style: TextStyle(
-                            color: darkBlue,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
+                    // ХАЙЛТ + АНГИЛАЛ (гүйлгэхэд дээр наалдаж үлдэнэ)
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _PinnedBar(
+                        height: 128,
+                        child: _buildFilterBar(),
+                      ),
+                    ),
+
+                    // ҮР ДҮНГИЙН ГАРЧИГ
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Танд зориулсан боломжууд',
+                                style: TextStyle(
+                                  color: darkBlue,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '$_total үйл ажиллагаа',
+                              style: const TextStyle(
+                                color: darkBlue,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // АЧААЛЖ БАЙХ ҮЕД
+                    if (_loading && filtered.isEmpty)
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) => const Padding(
+                              padding: EdgeInsets.only(bottom: 16),
+                              child: _SkeletonCard(),
+                            ),
+                            childCount: 2,
                           ),
                         ),
-                      ),
-                      Text(
-                        '$_total үйл ажиллагаа',
-                        style: const TextStyle(
-                          color: darkBlue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      )
+                    else if (_loading)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 4,
+                          ),
+                          child: LinearProgressIndicator(minHeight: 2),
                         ),
                       ),
-                    ],
-                  ),
+
+                    // АЛДАА
+                    if (_error != null)
+                      SliverToBoxAdapter(
+                        child: _buildMessage(
+                          icon: Icons.wifi_off_rounded,
+                          title: 'Мэдээлэл ачаалж чадсангүй',
+                          body: _error!,
+                          actionLabel: 'Дахин ачаалах',
+                          onAction: () => _load(more: _events.isNotEmpty),
+                        ),
+                      ),
+
+                    // ХООСОН
+                    if (filtered.isEmpty && !_loading && _error == null)
+                      SliverToBoxAdapter(
+                        child: _buildMessage(
+                          icon: Icons.search_off_rounded,
+                          title: 'Үйл ажиллагаа олдсонгүй',
+                          body: 'Өөр үгээр хайх эсвэл бүх ангиллыг харах боломжтой.',
+                          actionLabel: 'Бүгдийг харах',
+                          onAction: _resetFilters,
+                        ),
+                      )
+                    else if (filtered.isNotEmpty)
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                        sliver: _buildEventGrid(filtered),
+                      ),
+
+                    if (_nextOffset != null && !_loading)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
+                          child: OutlinedButton(
+                            onPressed: () => _load(more: true),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: primaryBlue,
+                              side: const BorderSide(color: borderBlue),
+                              backgroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Цааш үзэх',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
                 ),
               ),
-
-              // АЧААЛЖ БАЙХ ҮЕД
-              if (_loading && filtered.isEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
-                        child: _SkeletonCard(),
-                      ),
-                      childCount: 2,
-                    ),
-                  ),
-                )
-              else if (_loading)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-                    child: LinearProgressIndicator(minHeight: 2),
-                  ),
-                ),
-
-              // АЛДАА
-              if (_error != null)
-                SliverToBoxAdapter(child: _buildMessage(
-                  icon: Icons.wifi_off_rounded,
-                  title: 'Мэдээлэл ачаалж чадсангүй',
-                  body: _error!,
-                  actionLabel: 'Дахин ачаалах',
-                  onAction: () => _load(more: _events.isNotEmpty),
-                )),
-
-              // ХООСОН
-              if (filtered.isEmpty && !_loading && _error == null)
-                SliverToBoxAdapter(child: _buildMessage(
-                  icon: Icons.search_off_rounded,
-                  title: 'Үйл ажиллагаа олдсонгүй',
-                  body: 'Өөр үгээр хайх эсвэл бүх ангиллыг харах боломжтой.',
-                  actionLabel: 'Бүгдийг харах',
-                  onAction: _resetFilters,
-                ))
-              else if (filtered.isNotEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-                  sliver: _buildEventGrid(filtered),
-                ),
-
-              if (_nextOffset != null && !_loading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
-                    child: OutlinedButton(
-                      onPressed: () => _load(more: true),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: primaryBlue,
-                        side: const BorderSide(color: borderBlue),
-                        backgroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'Цааш үзэх',
-                        style: TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
+            ),
           ),
-        ),
-      ),
-      ),
+        );
+        if (constraints.maxWidth < 1120) return page;
+        return Row(
+          children: [
+            _EventsSidebar(onHome: () => Navigator.pop(context)),
+            Expanded(child: page),
+            _EventsSummary(count: _total, events: _events),
+          ],
+        );
+      },
     );
   }
 
-  // Дэлгэцийн өргөнөөс хамаарч 1, 2, 3 багана
   Widget _buildEventGrid(List<Map<String, String>> filtered) {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.crossAxisExtent;
-        final columns = width >= 1000 ? 3 : (width >= 600 ? 2 : 1);
+        final columns = width >= 1180 ? 3 : (width >= 500 ? 2 : 1);
 
         if (columns == 1) {
           return SliverList(
@@ -422,93 +437,93 @@ class _EventListPageState extends State<EventListPage> {
   // гэхдээ том дэлгэц дээр хэт өндөр болохгүй
   Widget _buildHero() {
     return LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            // жижиг дэлгэц дээрхтэй ижил харьцаа, гэхдээ хэт өндөр болохгүй
-            // 360 = хамгийн их өндөр. Багасгавал намхан, ихэсгэвэл өндөр болно.
-            final height = (width / 2.6).clamp(190.0, 360.0);
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // жижиг дэлгэц дээрхтэй ижил харьцаа, гэхдээ хэт өндөр болохгүй
+        // 360 = хамгийн их өндөр. Багасгавал намхан, ихэсгэвэл өндөр болно.
+        final height = (width / 2.6).clamp(190.0, 360.0);
 
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: SizedBox(
-                height: height,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(
-                      'assets/images/vol.jpg',
-                      fit: BoxFit.cover,
-                      // өргөн дэлгэц дээр хүмүүсийн нүүр харагдахаар дээш нь тааруулсан
-                      alignment: const Alignment(0, -0.6),
-                      errorBuilder: (context, error, stackTrace) =>
-                          const ColoredBox(color: darkBlue),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: SizedBox(
+            height: height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/vol.jpg',
+                  fit: BoxFit.cover,
+                  // өргөн дэлгэц дээр хүмүүсийн нүүр харагдахаар дээш нь тааруулсан
+                  alignment: const Alignment(0, -0.6),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const ColoredBox(color: darkBlue),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        darkBlue.withValues(alpha: 0.88),
+                        darkBlue.withValues(alpha: 0.3),
+                      ],
                     ),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            darkBlue.withValues(alpha: 0.88),
-                            darkBlue.withValues(alpha: 0.3),
-                          ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'Сайн үйлсэд хамтдаа',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          height: 1.15,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.4,
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(22),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          const Text(
-                            'Сайн үйлсэд хамтдаа',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 26,
-                              height: 1.15,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Сонирхолдоо тохирох сайн дурын ажлаа олоод нэгдээрэй.',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.88),
-                              fontSize: 13,
-                              height: 1.45,
-                            ),
-                          ),
-                          if (_total > 0) ...[
-                            const SizedBox(height: 14),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                '$_total үйл ажиллагаа нээлттэй',
-                                style: const TextStyle(
-                                  color: darkBlue,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      const SizedBox(height: 6),
+                      Text(
+                        'Сонирхолдоо тохирох сайн дурын ажлаа олоод нэгдээрэй.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontSize: 13,
+                          height: 1.45,
+                        ),
                       ),
-                    ),
-                  ],
+                      if (_total > 0) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$_total үйл ажиллагаа нээлттэй',
+                            style: const TextStyle(
+                              color: darkBlue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -670,6 +685,290 @@ class _EventListPageState extends State<EventListPage> {
 }
 
 // Хайлт, ангиллыг дээр наалдуулж үлдээх
+class _EventsSidebar extends StatelessWidget {
+  const _EventsSidebar({required this.onHome});
+  final VoidCallback onHome;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 220,
+    color: Colors.white,
+    padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: primaryBlue,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Сайн үйл',
+              style: TextStyle(
+                color: darkBlue,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 30),
+        const Text(
+          'ҮНДСЭН ЦЭС',
+          style: TextStyle(
+            color: mutedText,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _EventsNavItem(
+          icon: Icons.grid_view_rounded,
+          label: 'Нүүр хуудас',
+          onTap: onHome,
+        ),
+        const _EventsNavItem(
+          icon: Icons.event_available_rounded,
+          label: 'Арга хэмжээнүүд',
+          selected: true,
+        ),
+        const _EventsNavItem(
+          icon: Icons.favorite_border_rounded,
+          label: 'Хадгалсан',
+        ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3D6),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, color: primaryBlue),
+              SizedBox(height: 8),
+              Text(
+                'Өөрчлөлтийн нэг хэсэг болоорой',
+                style: TextStyle(
+                  color: darkBlue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+              SizedBox(height: 5),
+              Text(
+                'Танд тохирох ажлаа олоод нэгдээрэй.',
+                style: TextStyle(color: mutedText, fontSize: 10, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _EventsNavItem extends StatelessWidget {
+  const _EventsNavItem({
+    required this.icon,
+    required this.label,
+    this.selected = false,
+    this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 5),
+    child: Material(
+      color: selected ? const Color(0xFFF0EBFA) : Colors.transparent,
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: selected ? primaryBlue : mutedText),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? darkBlue : mutedText,
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _EventsSummary extends StatelessWidget {
+  const _EventsSummary({required this.count, required this.events});
+  final int count;
+  final List<Map<String, String>> events;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 270,
+    padding: const EdgeInsets.fromLTRB(0, 20, 18, 18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: borderBlue),
+            borderRadius: BorderRadius.circular(17),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Сайн үйлсийн нөлөө',
+                style: TextStyle(color: darkBlue, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                count.toString(),
+                style: const TextStyle(
+                  color: primaryBlue,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Text(
+                'нээлттэй арга хэмжээ',
+                style: TextStyle(color: mutedText, fontSize: 10),
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: LinearProgressIndicator(
+                  value: count == 0
+                      ? 0.0
+                      : (count / 40).clamp(0.0, 1.0).toDouble(),
+                  minHeight: 7,
+                  color: primaryBlue,
+                  backgroundColor: const Color(0xFFF0EBFA),
+                ),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'Оролцох боломжуудыг хайгаарай',
+                style: TextStyle(color: mutedText, fontSize: 10),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: borderBlue),
+            borderRadius: BorderRadius.circular(17),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Шинээр нэмэгдсэн',
+                style: TextStyle(color: darkBlue, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              if (events.isEmpty)
+                const Text(
+                  'Одоогоор арга хэмжээ алга.',
+                  style: TextStyle(color: mutedText, fontSize: 11),
+                )
+              else
+                ...events
+                    .take(3)
+                    .map(
+                      (event) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3D6),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.event_outlined,
+                                color: primaryBlue,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                event['title'] ?? '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: darkBlue,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3D6),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Text(
+            'Таны гаргасан нэг цаг бусдын өдөрт гэрэл нэмнэ.',
+            style: TextStyle(
+              color: darkBlue,
+              fontSize: 12,
+              height: 1.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _PinnedBar extends SliverPersistentHeaderDelegate {
   _PinnedBar({required this.height, required this.child});
   final double height;
@@ -909,7 +1208,11 @@ class _CardImage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0x33000000), Colors.transparent, Color(0x33000000)],
+              colors: [
+                Color(0x33000000),
+                Colors.transparent,
+                Color(0x33000000),
+              ],
               stops: [0.0, 0.4, 1.0],
             ),
           ),
@@ -993,7 +1296,11 @@ class _CardImage extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 14),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
                   SizedBox(width: 5),
                   Text(
                     'Бүртгүүлсэн',
@@ -1060,4 +1367,4 @@ class _SkeletonCard extends StatelessWidget {
       ),
     );
   }
-} 
+}
