@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
 import 'screens/home_page.dart';
+import 'services/auth_service.dart';
 
-void main() {
-  runApp(const VolunteerApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final authService = AuthService();
+  await authService.restoreSession();
+  runApp(VolunteerApp(authService: authService));
 }
 
 class VolunteerApp extends StatelessWidget {
-  const VolunteerApp({super.key});
+  const VolunteerApp({super.key, this.authService});
+  final AuthService? authService;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +27,7 @@ class VolunteerApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF8F6FF),
       ),
-      home: const HomePage(),
+      home: HomePage(authService: authService),
     );
   }
 }
