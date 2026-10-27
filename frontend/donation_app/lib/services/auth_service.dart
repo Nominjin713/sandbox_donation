@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthException implements Exception {
   const AuthException(
@@ -38,7 +39,44 @@ class AuthService {
 
   final http.Client _client;
   final String baseUrl;
+  static const _tokenKey = 'auth_session_token';
+  static const _nameKey = 'auth_session_name';
+  static const _emailKey = 'auth_session_email';
+  final SharedPreferencesAsync _preferences = SharedPreferencesAsync();
   AuthSession? currentSession;
+
+  Future<void> restoreSession() async {
+    try {
+      final token = await _preferences.getString(_tokenKey);
+      final name = await _preferences.getString(_nameKey);
+      final email = await _preferences.getString(_emailKey);
+      if (token == null || token.isEmpty || name == null || email == null) {
+        await _clearSavedSession();
+        return;
+      }
+      currentSession = AuthSession(token: token, name: name, email: email);
+    } catch (_) {
+      // Storage may be unavailable on a platform; leave the app usable as guest.
+      currentSession = null;
+    }
+  }
+
+  Future<void> _saveSession(AuthSession session) async {
+    await _preferences.setString(_tokenKey, session.token);
+    await _preferences.setString(_nameKey, session.name);
+    await _preferences.setString(_emailKey, session.email);
+  }
+
+  Future<void> _clearSavedSession() async {
+    await _preferences.remove(_tokenKey);
+    await _preferences.remove(_nameKey);
+    await _preferences.remove(_emailKey);
+  }
+
+  Future<void> _clearSession() async {
+    currentSession = null;
+    await _clearSavedSession();
+  }
 
   Future<AuthSession> login({
     required String email,
@@ -112,6 +150,7 @@ class AuthService {
         email: user['email'] as String,
       );
       currentSession = session;
+      await _saveSession(session);
       return session;
     } on AuthException {
       rethrow;
@@ -127,7 +166,7 @@ class AuthService {
     if (response.statusCode != 200) {
       throw const AuthException('Гарч чадсангүй. Дахин оролдоно уу.');
     }
-    currentSession = null;
+    await _clearSession();
   }
 
   Future<Map<String, dynamic>> request(
@@ -145,7 +184,7 @@ class AuthService {
       final data =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        if (response.statusCode == 401) currentSession = null;
+        if (response.statusCode == 401) await _clearSession();
         final errors = data['errors'];
         final details = errors is Map
             ? errors.values
