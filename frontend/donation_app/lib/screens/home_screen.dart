@@ -7,7 +7,7 @@ class HomeScreen extends StatelessWidget {
 
   final List<Map<String, String>> events = const [
     {
-      'title': 'Мод тарих сайн дурын ажил/',
+      'title': 'Мод тарих сайн дурын ажил',
       'organization': 'Ногоон ирээдүй ТББ',
       'date': '2026.10.25',
       'location': 'Улаанбаатар хот',
