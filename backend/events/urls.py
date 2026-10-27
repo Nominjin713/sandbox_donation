@@ -4,7 +4,9 @@ from . import views
 urlpatterns = [
     path('create', views.create, name='event_create'),
     path('upload-image/', views.upload_image, name='event_upload_image_slash'),
-    path('upload-image', views.upload_image, name='event_upload_image'),  # ← ШИНЭ
+    path('upload-image', views.upload_image, name='event_upload_image'),
+    path('mine/', views.my_events, name='event_mine_slash'),  # ← ШИНЭ
+    path('mine', views.my_events, name='event_mine'),         # ← ШИНЭ
     path('<str:event_id>/edit', views.edit, name='event_edit'),
     path('<str:event_id>/delete', views.delete, name='event_delete'),
     path('<str:event_id>/join', views.participation, name='event_join'),

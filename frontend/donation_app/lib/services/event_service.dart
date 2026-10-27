@@ -254,4 +254,16 @@ class EventService {
       () => EventRecord.fromJson(data['event'] as Map<String, dynamic>),
     );
   }
+
+  /// ШИНЭ: миний бүртгүүлсэн үйл ажиллагаанууд
+  /// upcoming = удахгүй болох, past = оролцсон (дууссан)
+  Future<({List<EventRecord> upcoming, List<EventRecord> past})> mine() async {
+    final data = await api.request('/events/mine');
+    List<EventRecord> parse(Object? list) => (list as List)
+        .map((item) => EventRecord.fromJson(item as Map<String, dynamic>))
+        .toList();
+    return _read(
+      () => (upcoming: parse(data['upcoming']), past: parse(data['past'])),
+    );
+  }
 }

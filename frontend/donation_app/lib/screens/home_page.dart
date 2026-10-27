@@ -6,6 +6,7 @@ import 'create_event_page.dart';
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import 'event_detail_page.dart';
+import 'profile_page.dart';
 
 const Color primaryBlue = Color(0xFF7353BA);
 const Color darkBlue = Color(0xFF39275F);
@@ -149,6 +150,7 @@ class _HomePageState extends State<HomePage> {
           builder: (context, constraints) {
             final desktop = constraints.maxWidth >= 1120;
             final content = _DashboardMain(
+              authService: _authService, // ШИНЭ: профайл товчинд хэрэгтэй
               events: _events,
               loading: _loadingEvents,
               error: _eventsError,
@@ -531,6 +533,7 @@ class _AsideEvent extends StatelessWidget {
 
 class _DashboardMain extends StatelessWidget {
   const _DashboardMain({
+    required this.authService, // ШИНЭ
     required this.events,
     required this.loading,
     required this.error,
@@ -546,6 +549,7 @@ class _DashboardMain extends StatelessWidget {
     required this.loggingOut,
   });
 
+  final AuthService authService; // ШИНЭ
   final List<EventRecord> events;
   final bool loading;
   final String? error;
@@ -632,6 +636,8 @@ class _DashboardMain extends StatelessWidget {
                         style: const TextStyle(color: darkBlue, fontSize: 12),
                       ),
                     ),
+                  // ШИНЭ: профайл хуудас нээх товч
+                  ProfileButton(authService: authService),
                   IconButton(
                     tooltip: 'Гарах',
                     onPressed: loggingOut ? null : onLogout,

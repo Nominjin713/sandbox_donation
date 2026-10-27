@@ -379,3 +379,23 @@ def participation(request, event_id, cancel=False):
     except RegistrationUnavailable as exc:
         return JsonResponse({'message': str(exc)}, status=409)
     return JsonResponse({'event': event_data(event, token.user)})
+def my_events(request):
+    if request.method != 'GET':
+        response = JsonResponse({'message': 'GET хүсэлт илгээнэ үү.'}, status=405)
+        response['Allow'] = 'GET'
+        return response
+    token = get_session(request)
+    if token is None:
+        return JsonResponse({'message': 'Дахин нэвтэрнэ үү.'}, status=401)
+    registered_ids = EventRegistration.objects.filter(
+        user=token.user, status_id='registered'
+    ).values('event_id')
+    events = event_query(request).filter(pk__in=registered_ids)
+    now = timezone.now()
+    upcoming = events.filter(duusah_ognoo__gt=now).order_by('ehleh_ognoo', 'pk')
+    past = events.filter(duusah_ognoo__lte=now).order_by('-ehleh_ognoo', 'pk')
+    return JsonResponse({
+        'upcoming': [event_data(event, token.user) for event in upcoming],
+        'past': [event_data(event, token.user) for event in past],
+    })
+    
