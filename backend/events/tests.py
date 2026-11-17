@@ -1,11 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 import json
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from .models import Event, Organization
+from .models import CommentLike, Event, EventComment, Organization
 from .services import create_event
 from accounts.models import AuthToken, User
 from accounts.services import create_session
@@ -220,3 +220,248 @@ class EventApiTests(TestCase):
         past = self.post({**self.data, 'ehleh_ognoo': (end - timedelta(hours=1)).isoformat(), 'duusah_ognoo': end.isoformat()}).json()['event']['argahemjeeniidugaar']
         self.assertEqual(self.client.post(f'/events/{past}/join', **self.headers).status_code, 409)
         self.assertEqual(self.client.get('/events/', {'upcoming': 'true'}).json()['count'], 1)
+
+
+class CommentTestBase(TestCase):
+    """Сэтгэгдлийн тестүүдийн нийтлэг бэлтгэл (өөрөө тест агуулахгүй)."""
+
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username='commenter', email='commenter@example.com',
+            password='Password123', name='Болд', email_verified=True)
+        self.other = User.objects.create_user(
+            username='other', email='other@example.com',
+            password='Password123', name='Сараа', email_verified=True)
+        self.organization = Organization.objects.create(
+            id='org-c', name='Тест байгууллага', owner=self.author)
+        start = timezone.now() + timedelta(days=1)
+        self.event = create_event(
+            argahemjeeniidugaar='event-c', baiguullagiindugaar='org-c',
+            angilaliindugaar='environment', tulwiindugaar='open',
+            garchig='Мод тарих', bairshil='Улаанбаатар',
+            ehleh_ognoo=start, duusah_ognoo=start + timedelta(hours=2),
+            oroltsohchdiin_too=5, owner=self.author)
+        self.token = create_session(self.author)
+        self.other_token = create_session(self.other)
+
+    def _auth(self, token):
+        return {'HTTP_AUTHORIZATION': f'Bearer {token}'}
+
+    def _post(self, content, token=None, **extra):
+        headers = self._auth(token) if token else {}
+        headers.update(extra)
+        return self.client.post(
+            f'/events/{self.event.pk}/comments',
+            data=json.dumps({'content': content}),
+            content_type='application/json', **headers)
+
+
+class EventCommentApiTests(CommentTestBase):
+    """ШИНЭ: Сэтгэгдлийн үндсэн API."""
+
+    def test_guest_can_read_but_not_write(self):
+        self.assertEqual(self.client.get(f'/events/{self.event.pk}/comments').status_code, 200)
+        self.assertEqual(self._post('Сайхан санаа').status_code, 401)
+
+    def test_signed_in_user_can_post_and_read_back(self):
+        response = self._post('Маш сайхан санаачилга!', self.token)
+        self.assertEqual(response.status_code, 201)
+        comment = response.json()['comment']
+        self.assertEqual(comment['content'], 'Маш сайхан санаачилга!')
+        self.assertEqual(comment['author_name'], 'Болд')
+        self.assertTrue(comment['is_mine'])
+
+        listing = self.client.get(f'/events/{self.event.pk}/comments', **self._auth(self.token)).json()
+        self.assertEqual(listing['count'], 1)
+        self.assertEqual(listing['comments'][0]['id'], comment['id'])
+        self.assertTrue(listing['comments'][0]['is_mine'])
+
+        # Өөр хэрэглэгчид is_mine=False байна.
+        other_view = self.client.get(f'/events/{self.event.pk}/comments', **self._auth(self.other_token)).json()
+        self.assertFalse(other_view['comments'][0]['is_mine'])
+
+    def test_blank_and_too_long_comments_are_rejected(self):
+        self.assertEqual(self._post('   ', self.token).status_code, 400)
+        self.assertEqual(self._post('ө' * 1001, self.token).status_code, 400)
+        self.assertEqual(EventComment.objects.count(), 0)
+
+    def test_newest_comment_comes_first(self):
+        self._post('Эхний', self.token)
+        self._post('Хоёр дахь', self.other_token)
+        rows = self.client.get(f'/events/{self.event.pk}/comments').json()['comments']
+        self.assertEqual([row['content'] for row in rows], ['Хоёр дахь', 'Эхний'])
+
+    def test_missing_event_returns_404(self):
+        self.assertEqual(self.client.get('/events/does-not-exist/comments').status_code, 404)
+
+    def test_author_can_delete_own_comment_but_stranger_cannot(self):
+        comment_id = self._post('Устгах сэтгэгдэл', self.other_token).json()['comment']['id']
+        url = f'/events/{self.event.pk}/comments/{comment_id}/delete'
+
+        third = User.objects.create_user(
+            username='third', email='third@example.com',
+            password='Password123', name='Гурав', email_verified=True)
+        third_token = create_session(third)
+        self.assertEqual(self.client.post(url, **self._auth(third_token)).status_code, 403)
+        self.assertEqual(EventComment.objects.count(), 1)
+
+        self.assertEqual(self.client.post(url, **self._auth(self.other_token)).status_code, 200)
+        self.assertEqual(EventComment.objects.count(), 0)
+
+    def test_event_owner_can_moderate_any_comment(self):
+        comment_id = self._post('Зохисгүй сэтгэгдэл', self.other_token).json()['comment']['id']
+        url = f'/events/{self.event.pk}/comments/{comment_id}/delete'
+        self.assertEqual(self.client.post(url, **self._auth(self.token)).status_code, 200)
+        self.assertEqual(EventComment.objects.count(), 0)
+
+    def test_deleting_event_removes_its_comments(self):
+        self._post('Үлдэх ёсгүй', self.token)
+        self.event.delete()
+        self.assertEqual(EventComment.objects.count(), 0)
+
+
+class EventCommentExtrasTests(CommentTestBase):
+    """ШИНЭ: зураг, таалагдсан (like), хариу (reply)."""
+
+    def _post_raw(self, body, token=None):
+        headers = self._auth(token) if token else {}
+        return self.client.post(
+            f'/events/{self.event.pk}/comments',
+            data=json.dumps(body), content_type='application/json', **headers)
+
+    def test_comment_may_carry_only_an_image(self):
+        image = f'http://testserver/media/events/{"a" * 8}.jpg'
+        response = self._post_raw({'content': '', 'zurag': image}, self.token)
+        self.assertEqual(response.status_code, 201)
+        comment = response.json()['comment']
+        self.assertEqual(comment['zurag'], image)
+        self.assertEqual(comment['content'], '')
+
+    def test_foreign_image_urls_are_rejected(self):
+        response = self._post_raw(
+            {'content': 'Зурагтай', 'zurag': 'https://evil.example.com/a.jpg'}, self.token)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(EventComment.objects.count(), 0)
+
+    def test_unknown_fields_are_rejected(self):
+        response = self._post_raw({'content': 'Сайн', 'hello': 1}, self.token)
+        self.assertEqual(response.status_code, 400)
+
+    def test_like_toggles_and_counts_once_per_user(self):
+        comment_id = self._post('Таалагдах сэтгэгдэл', self.token).json()['comment']['id']
+        url = f'/events/{self.event.pk}/comments/{comment_id}/like'
+
+        first = self.client.post(url, **self._auth(self.other_token)).json()['comment']
+        self.assertEqual(first['like_count'], 1)
+        self.assertTrue(first['liked_by_me'])
+
+        # Дахин дарвал буцаана.
+        second = self.client.post(url, **self._auth(self.other_token)).json()['comment']
+        self.assertEqual(second['like_count'], 0)
+        self.assertFalse(second['liked_by_me'])
+
+        self.client.post(url, **self._auth(self.other_token))
+        self.client.post(url, **self._auth(self.token))
+        self.assertEqual(CommentLike.objects.filter(comment_id=comment_id).count(), 2)
+
+        # Нэвтрээгүй хүн дарж чадахгүй.
+        self.assertEqual(self.client.post(url).status_code, 401)
+
+    def test_guest_listing_shows_counts_but_not_liked_by_me(self):
+        comment_id = self._post('Тоолъё', self.token).json()['comment']['id']
+        self.client.post(
+            f'/events/{self.event.pk}/comments/{comment_id}/like', **self._auth(self.other_token))
+        row = self.client.get(f'/events/{self.event.pk}/comments').json()['comments'][0]
+        self.assertEqual(row['like_count'], 1)
+        self.assertFalse(row['liked_by_me'])
+
+    def test_reply_is_nested_under_its_parent(self):
+        parent_id = self._post('Үндсэн сэтгэгдэл', self.token).json()['comment']['id']
+        reply = self._post_raw(
+            {'content': 'Хариу', 'parent': parent_id}, self.other_token).json()['comment']
+        self.assertEqual(reply['parent_id'], parent_id)
+
+        listing = self.client.get(f'/events/{self.event.pk}/comments').json()
+        self.assertEqual(len(listing['comments']), 1, 'хариу тусдаа мөр болж харагдах ёсгүй')
+        self.assertEqual(listing['count'], 2)
+        self.assertEqual(listing['comments'][0]['replies'][0]['content'], 'Хариу')
+
+    def test_reply_to_a_reply_attaches_to_the_root_comment(self):
+        parent_id = self._post('Үндсэн', self.token).json()['comment']['id']
+        reply_id = self._post_raw(
+            {'content': 'Хариу 1', 'parent': parent_id}, self.other_token).json()['comment']['id']
+        deep = self._post_raw(
+            {'content': 'Хариу 2', 'parent': reply_id}, self.token).json()['comment']
+        self.assertEqual(deep['parent_id'], parent_id)
+
+        listing = self.client.get(f'/events/{self.event.pk}/comments').json()
+        self.assertEqual(len(listing['comments'][0]['replies']), 2)
+
+    def test_reply_to_an_unknown_comment_returns_404(self):
+        self.assertEqual(self._post_raw({'content': 'Хариу', 'parent': 999}, self.token).status_code, 404)
+
+    def test_deleting_a_parent_removes_its_replies(self):
+        parent_id = self._post('Үндсэн', self.token).json()['comment']['id']
+        self._post_raw({'content': 'Хариу', 'parent': parent_id}, self.other_token)
+        self.assertEqual(EventComment.objects.count(), 2)
+
+        self.client.post(
+            f'/events/{self.event.pk}/comments/{parent_id}/delete', **self._auth(self.token))
+        self.assertEqual(EventComment.objects.count(), 0)
+
+    def test_deleting_a_comment_removes_its_likes(self):
+        comment_id = self._post('Устгана', self.token).json()['comment']['id']
+        self.client.post(
+            f'/events/{self.event.pk}/comments/{comment_id}/like', **self._auth(self.other_token))
+        self.assertEqual(CommentLike.objects.count(), 1)
+
+        self.client.post(
+            f'/events/{self.event.pk}/comments/{comment_id}/delete', **self._auth(self.token))
+        self.assertEqual(CommentLike.objects.count(), 0)
+
+
+class EventDateFilterTests(TestCase):
+    """ШИНЭ: жагсаалтыг он / сараар шүүх."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username='lister', email='lister@example.com',
+            password='Password123', name='Лист', email_verified=True)
+        Organization.objects.create(id='org-d', name='Огноо ТББ', owner=self.owner)
+        self.dates = {
+            'event-mar': datetime(2027, 3, 10, 9, tzinfo=dt_timezone.utc),
+            'event-may': datetime(2027, 5, 10, 9, tzinfo=dt_timezone.utc),
+            'event-old': datetime(2026, 5, 10, 9, tzinfo=dt_timezone.utc),
+        }
+        for event_id, start in self.dates.items():
+            create_event(
+                argahemjeeniidugaar=event_id, baiguullagiindugaar='org-d',
+                angilaliindugaar='environment', tulwiindugaar='open',
+                garchig=event_id, bairshil='Улаанбаатар',
+                ehleh_ognoo=start, duusah_ognoo=start + timedelta(hours=3),
+                oroltsohchdiin_too=5, owner=self.owner)
+
+    def ids(self, query):
+        rows = self.client.get('/events/' + query).json()['events']
+        return sorted(row['argahemjeeniidugaar'] for row in rows)
+
+    def test_filter_by_year(self):
+        self.assertEqual(self.ids('?year=2027'), ['event-mar', 'event-may'])
+        self.assertEqual(self.ids('?year=2026'), ['event-old'])
+
+    def test_filter_by_month(self):
+        self.assertEqual(self.ids('?month=5'), ['event-may', 'event-old'])
+
+    def test_year_and_month_combine(self):
+        self.assertEqual(self.ids('?year=2027&month=5'), ['event-may'])
+
+    def test_empty_values_are_ignored(self):
+        self.assertEqual(len(self.ids('?year=&month=')), 3)
+
+    def test_invalid_values_are_rejected(self):
+        for query in ('?year=abc', '?month=0', '?month=13', '?year=1800'):
+            with self.subTest(query=query):
+                self.assertEqual(self.client.get('/events/' + query).status_code, 400)
+
+    def test_date_filter_combines_with_search(self):
+        self.assertEqual(self.ids('?year=2027&q=event-mar'), ['event-mar'])

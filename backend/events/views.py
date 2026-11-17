@@ -17,7 +17,7 @@ from django.utils.dateparse import parse_datetime
 
 from accounts.authentication import get_session
 
-from .models import Event, EventRegistration
+from .models import CommentLike, Event, EventComment, EventRegistration
 from .services import EventAlreadyExists, RegistrationUnavailable, create_event, register_participant, cancel_participation
 
 REQUIRED_FIELDS = (
@@ -87,6 +87,16 @@ def _is_uploaded_image(request, url):
         and parsed_image.hostname == 'res.cloudinary.com'
         and parsed_image.path.startswith(f'/{cloud_name}/image/upload/')
     )
+
+
+# ШИНЭ: Cloudinary байхгүй үед зургийг серверийн media хавтсанд хадгална.
+def _save_image_locally(request, data, extension):
+    folder = os.path.join(settings.MEDIA_ROOT, 'events')
+    os.makedirs(folder, exist_ok=True)
+    name = f'{uuid4().hex}.{extension}'
+    with open(os.path.join(folder, name), 'wb') as handle:
+        handle.write(data)
+    return request.build_absolute_uri(f'{settings.MEDIA_URL}events/{name}')
 
 
 def _save_image_to_cloudinary(data, extension):
@@ -181,7 +191,14 @@ def upload_image(request):
         url = _save_image_to_cloudinary(data, extension)
     except ValueError as exc:
         if str(exc) == 'CLOUDINARY_URL is not configured.':
-            return JsonResponse({'message': 'Зураг хадгалах Cloudinary тохиргоо хийгдээгүй байна.'}, status=503)
+            # ШИНЭ: Cloudinary тохируулаагүй бол (жишээ нь локал хөгжүүлэлт)
+            # зургийг MEDIA_ROOT дотор хадгална.
+            try:
+                url = _save_image_locally(request, data, extension)
+            except OSError:
+                logger.exception('Local image save failed.')
+                return JsonResponse({'message': 'Зургийг хадгалж чадсангүй.'}, status=503)
+            return JsonResponse({'url': url}, status=201)
         logger.exception('Cloudinary returned an invalid upload response.')
         return JsonResponse({'message': 'Зургийг хадгалах үйлчилгээ алдаа буцаалаа.'}, status=502)
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
@@ -345,6 +362,19 @@ def event_home(request):
         events = events.filter(angilaliindugaar=category)
     if request.GET.get('upcoming') == 'true':
         events = events.filter(duusah_ognoo__gt=timezone.now())
+    # ШИНЭ: эхлэх огнооны он / сараар шүүх
+    for field, name, low, high in (('year', 'ehleh_ognoo__year', 1970, 2100),
+                                   ('month', 'ehleh_ognoo__month', 1, 12)):
+        raw = request.GET.get(field, '').strip()
+        if not raw:
+            continue
+        try:
+            value = int(raw)
+        except ValueError:
+            return JsonResponse({'message': f'{field} буруу байна.'}, status=400)
+        if not low <= value <= high:
+            return JsonResponse({'message': f'{field} {low}–{high} хооронд байна.'}, status=400)
+        events = events.filter(**{name: value})
     count = events.count()
     rows = list(events.order_by('ehleh_ognoo', 'pk')[offset:offset + limit])
     user = token.user if token else None
@@ -399,3 +429,167 @@ def my_events(request):
         'past': [event_data(event, token.user) for event in past],
     })
     
+
+
+# --- ШИНЭ: Сэтгэгдэл ---
+
+MAX_COMMENTS = 200
+
+
+def comment_data(comment, user=None, with_replies=False):
+    author = comment.user
+    like_count = getattr(comment, 'like_count', None)
+    if like_count is None:
+        like_count = comment.likes.count()
+    liked = getattr(comment, 'liked_by_me', None)
+    if liked is None:
+        liked = bool(user and comment.likes.filter(user=user).exists())
+    data = {
+        'id': comment.pk,
+        'parent_id': comment.parent_id,
+        'content': comment.content,
+        'zurag': comment.zurag or '',
+        'author_name': (getattr(author, 'name', '') or author.get_username()),
+        'created_at': comment.created_at.isoformat(),
+        'is_mine': bool(user and author.pk == user.pk),
+        'like_count': like_count,
+        'liked_by_me': bool(liked),
+    }
+    if with_replies:
+        replies = sorted(comment.replies.all(), key=lambda row: (row.created_at, row.pk))
+        data['replies'] = [comment_data(reply, user) for reply in replies]
+        data['reply_count'] = len(replies)
+    return data
+
+
+def _comment_queryset(event, user):
+    liked = Exists(CommentLike.objects.filter(comment=OuterRef('pk'), user=user)) if user \
+        else Value(False, output_field=BooleanField())
+    return (EventComment.objects.filter(event=event)
+            .select_related('user')
+            .annotate(like_count=Count('likes', distinct=True), liked_by_me=liked))
+
+
+def comments(request, event_id):
+    """GET  — сэтгэгдлийн жагсаалт (нэвтрээгүй ч харна)
+       POST — шинэ сэтгэгдэл эсвэл хариу бичих (нэвтэрсэн байх ёстой)"""
+    if request.method not in ('GET', 'POST'):
+        response = JsonResponse({'message': 'GET эсвэл POST хүсэлт илгээнэ үү.'}, status=405)
+        response['Allow'] = 'GET, POST'
+        return response
+
+    event = Event.objects.filter(pk=event_id).first()
+    if event is None:
+        return JsonResponse({'message': 'Үйл ажиллагаа олдсонгүй.'}, status=404)
+
+    token = get_session(request)
+    user = token.user if token else None
+
+    if request.method == 'POST':
+        if token is None:
+            return JsonResponse({'message': 'Сэтгэгдэл бичихийн тулд нэвтэрнэ үү.'}, status=401)
+        if request.content_type != 'application/json':
+            return JsonResponse({'message': 'application/json төрлөөр мэдээллээ илгээнэ үү.'}, status=415)
+        try:
+            body = json.loads(request.body)
+        except RequestDataTooBig:
+            return JsonResponse({'message': 'Сэтгэгдэл хэт урт байна.'}, status=413)
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({'message': 'Зөв JSON хүсэлт илгээнэ үү.'}, status=400)
+        if not isinstance(body, dict):
+            return JsonResponse({'message': 'JSON object илгээнэ үү.'}, status=400)
+
+        unknown = set(body) - {'content', 'zurag', 'parent'}
+        if unknown:
+            return JsonResponse({'message': 'Танигдахгүй талбар байна.',
+                                 'errors': {field: ['Танигдахгүй талбар.'] for field in sorted(unknown)}},
+                                status=400)
+
+        content = body.get('content') or ''
+        if not isinstance(content, str):
+            return JsonResponse({'message': 'Сэтгэгдлээ бичнэ үү.',
+                                 'errors': {'content': ['Текст утга оруулна уу.']}}, status=400)
+        content = content.strip()
+        if len(content) > EventComment.MAX_LENGTH:
+            return JsonResponse({'message': f'Сэтгэгдэл {EventComment.MAX_LENGTH} тэмдэгтээс хэтрэхгүй байх ёстой.',
+                                 'errors': {'content': ['Сэтгэгдэл хэт урт байна.']}}, status=400)
+
+        image = body.get('zurag') or ''
+        if not isinstance(image, str) or len(image) > 500 or (image and not _is_uploaded_image(request, image)):
+            return JsonResponse({'message': 'Зургаа дахин оруулна уу.',
+                                 'errors': {'zurag': ['Зураг буруу байна.']}}, status=400)
+
+        if not content and not image:
+            return JsonResponse({'message': 'Сэтгэгдэл эсвэл зураг оруулна уу.',
+                                 'errors': {'content': ['Сэтгэгдэл хоосон байж болохгүй.']}}, status=400)
+
+        parent = None
+        parent_id = body.get('parent')
+        if parent_id not in (None, ''):
+            if not isinstance(parent_id, int):
+                return JsonResponse({'message': 'Хариу бичих сэтгэгдлийг олсонгүй.',
+                                     'errors': {'parent': ['Бүхэл тоо оруулна уу.']}}, status=400)
+            parent = EventComment.objects.filter(pk=parent_id, event=event).first()
+            if parent is None:
+                return JsonResponse({'message': 'Хариу бичих сэтгэгдэл олдсонгүй.'}, status=404)
+            # Хариуны хариуг үндсэн сэтгэгдэл рүү нь холбоно (нэг түвшин).
+            if parent.parent_id:
+                parent = parent.parent
+
+        comment = EventComment.objects.create(event=event, user=token.user, content=content,
+                                              zurag=image, parent=parent)
+        return JsonResponse({'message': 'Сэтгэгдэл нэмэгдлээ.',
+                             'comment': comment_data(comment, user, with_replies=parent is None)},
+                            status=201)
+
+    rows = list(_comment_queryset(event, user)
+                .filter(parent__isnull=True)
+                .prefetch_related('replies__user', 'replies__likes')
+                .order_by('-created_at', '-id')[:MAX_COMMENTS])
+    total = EventComment.objects.filter(event=event).count()
+    return JsonResponse({
+        'comments': [comment_data(comment, user, with_replies=True) for comment in rows],
+        'count': total,
+    })
+
+
+def comment_delete(request, event_id, comment_id):
+    """Өөрийн сэтгэгдэл, эсвэл арга хэмжээг үүсгэсэн хүн устгаж болно."""
+    if request.method != 'POST':
+        response = JsonResponse({'message': 'POST хүсэлт илгээнэ үү.'}, status=405)
+        response['Allow'] = 'POST'
+        return response
+    token = get_session(request)
+    if token is None:
+        return JsonResponse({'message': 'Дахин нэвтэрнэ үү.'}, status=401)
+    comment = (EventComment.objects
+               .select_related('event__baiguullagiindugaar')
+               .filter(pk=comment_id, event_id=event_id).first())
+    if comment is None:
+        return JsonResponse({'message': 'Сэтгэгдэл олдсонгүй.'}, status=404)
+    is_author = comment.user_id == token.user_id
+    is_event_owner = comment.event.baiguullagiindugaar.owner_id == token.user_id
+    if not (is_author or is_event_owner):
+        return JsonResponse({'message': 'Зөвхөн өөрийн сэтгэгдлийг устгах боломжтой.'}, status=403)
+    comment.delete()
+    return JsonResponse({'message': 'Сэтгэгдлийг устгалаа.'})
+
+
+def comment_like(request, event_id, comment_id):
+    """ШИНЭ: like дарах / буцаах (toggle)."""
+    if request.method != 'POST':
+        response = JsonResponse({'message': 'POST хүсэлт илгээнэ үү.'}, status=405)
+        response['Allow'] = 'POST'
+        return response
+    token = get_session(request)
+    if token is None:
+        return JsonResponse({'message': 'Таалагдсан товч дарахын тулд нэвтэрнэ үү.'}, status=401)
+    comment = EventComment.objects.filter(pk=comment_id, event_id=event_id).select_related('user').first()
+    if comment is None:
+        return JsonResponse({'message': 'Сэтгэгдэл олдсонгүй.'}, status=404)
+    like = CommentLike.objects.filter(comment=comment, user=token.user).first()
+    if like is None:
+        CommentLike.objects.create(comment=comment, user=token.user)
+    else:
+        like.delete()
+    return JsonResponse({'comment': comment_data(comment, token.user)})

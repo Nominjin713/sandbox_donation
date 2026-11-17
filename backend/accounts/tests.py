@@ -8,6 +8,7 @@ from django.test import TestCase
 from django.core.cache import cache
 from django.utils import timezone
 from .models import AuthToken, User
+from .services import create_session
 
 
 class AuthenticationTests(TestCase):
@@ -105,3 +106,67 @@ class AuthenticationTests(TestCase):
         response = self.client.options('/auth/login', HTTP_ORIGIN='http://localhost:3000')
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['Access-Control-Allow-Origin'], 'http://localhost:3000')
+
+
+class ProfileUpdateTests(TestCase):
+    """ШИНЭ: хэрэглэгч өөрийн профайлаа засна."""
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username='bold', email='bold@example.com', password='Strong!Pass483',
+            name='Болд', email_verified=True)
+        self.headers = {'HTTP_AUTHORIZATION': 'Bearer ' + create_session(self.user)}
+
+    def post(self, data, headers=None):
+        return self.client.post('/auth/profile', json.dumps(data),
+                                content_type='application/json',
+                                **(self.headers if headers is None else headers))
+
+    def test_me_returns_the_editable_fields(self):
+        body = self.client.get('/auth/me', **self.headers).json()['user']
+        self.assertEqual(body['name'], 'Болд')
+        self.assertEqual(body['phone'], '')
+        self.assertEqual(body['birth_date'], '')
+
+    def test_name_phone_and_birth_date_are_saved(self):
+        response = self.post({'name': '  Болд-Эрдэнэ ', 'phone': '+976 9911-2233',
+                              'birth_date': '2000-05-17'})
+        self.assertEqual(response.status_code, 200)
+        user = response.json()['user']
+        self.assertEqual(user['name'], 'Болд-Эрдэнэ')
+        self.assertEqual(user['phone'], '+976 9911-2233')
+        self.assertEqual(user['birth_date'], '2000-05-17')
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.name, 'Болд-Эрдэнэ')
+        self.assertEqual(str(self.user.birth_date), '2000-05-17')
+
+    def test_partial_update_leaves_other_fields_alone(self):
+        self.post({'phone': '99112233'})
+        self.post({'name': 'Шинэ нэр'})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.name, 'Шинэ нэр')
+        self.assertEqual(self.user.phone, '99112233')
+
+    def test_birth_date_can_be_cleared(self):
+        self.post({'birth_date': '1999-01-02'})
+        self.post({'birth_date': ''})
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.birth_date)
+
+    def test_invalid_values_are_rejected(self):
+        for payload in ({'name': '   '}, {'name': 'x' * 101},
+                        {'phone': 'утас'}, {'phone': '9' * 31},
+                        {'birth_date': '17/05/2000'}, {'birth_date': '2999-01-01'},
+                        {'email': 'new@example.com'}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self.post(payload).status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.name, 'Болд')
+
+    def test_signed_out_users_cannot_edit(self):
+        self.assertEqual(self.post({'name': 'Хэн нэгэн'}, headers={}).status_code, 401)
+
+    def test_wrong_method_is_rejected(self):
+        self.assertEqual(self.client.get('/auth/profile', **self.headers).status_code, 405)

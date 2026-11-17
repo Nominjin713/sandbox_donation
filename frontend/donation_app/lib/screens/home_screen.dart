@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  static const Color primaryColor = Color(0xFF287A55);
+  static const Color primaryColor = brandBlue;
 
   final List<Map<String, String>> events = const [
     {
@@ -32,20 +33,18 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F7),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: const BrandAppBarBackground(),
         elevation: 0,
         title: const Row(
           children: [
-            Icon(Icons.volunteer_activism, color: primaryColor, size: 30),
+            Icon(Icons.volunteer_activism, color: brandInk, size: 30),
             SizedBox(width: 8),
             Text(
               'Volunteer Hub',
-              style: TextStyle(
-                color: primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: brandInk, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -53,9 +52,9 @@ class HomeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
-            'Сайн үйлсэд нэгдээрэй 💚',
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+          const BrandGradientText(
+            'Сайн үйлсэд нэгдээрэй 💛',
+            style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -100,14 +99,15 @@ class HomeScreen extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE2F3E9),
+                        gradient: brandGradient,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         event['category']!,
                         style: const TextStyle(
-                          color: primaryColor,
+                          color: brandInk,
                           fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),

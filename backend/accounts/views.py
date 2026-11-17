@@ -8,6 +8,8 @@ from django.core.validators import validate_email
 from django.http import JsonResponse
 from .models import User
 from .authentication import get_session as session
+from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.db import transaction
 from .services import EmailAlreadyRegistered, VerificationRequired, register_user, login_user, send_verification, verify_email
 from .services import request_password_reset, reset_password
@@ -18,7 +20,14 @@ def error(message, status=400):
 
 
 def user_data(user):
-    return {'id': user.pk, 'name': user.name, 'email': user.email}
+    return {
+        'id': user.pk,
+        'name': user.name,
+        'email': user.email,
+        # ШИНЭ: профайл засахад хэрэгтэй талбарууд
+        'phone': user.phone or '',
+        'birth_date': user.birth_date.isoformat() if user.birth_date else '',
+    }
 
 
 def endpoint(method, limited=False):
@@ -183,3 +192,68 @@ def resend_verification(request):
         logging.getLogger(__name__).exception('Verification email delivery failed')
         return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
     return JsonResponse({'message': 'Шинэ код илгээлээ.'})
+
+
+# ШИНЭ: хэрэглэгч өөрийн профайлаа засах
+PROFILE_FIELDS = ('name', 'phone', 'birth_date')
+
+
+@endpoint('POST')
+def update_profile(request):
+    token = session(request)
+    if token is None:
+        return error('Дахин нэвтэрнэ үү.', 401)
+    try:
+        body = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError, RequestDataTooBig):
+        return error('Зөв JSON хүсэлт илгээнэ үү.')
+    if not isinstance(body, dict):
+        return error('JSON object илгээнэ үү.')
+
+    unknown = set(body) - set(PROFILE_FIELDS)
+    if unknown:
+        return JsonResponse({'message': 'Танигдахгүй талбар байна.',
+                             'errors': {field: ['Танигдахгүй талбар.'] for field in sorted(unknown)}},
+                            status=400)
+
+    user = token.user
+    errors = {}
+
+    if 'name' in body:
+        name = body['name']
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100:
+            errors['name'] = ['Нэрээ 1–100 тэмдэгтээр бичнэ үү.']
+        else:
+            user.name = name.strip()
+
+    if 'phone' in body:
+        phone = body['phone']
+        if not isinstance(phone, str) or len(phone.strip()) > 30:
+            errors['phone'] = ['Утасны дугаар 30 тэмдэгтээс хэтрэхгүй байна.']
+        else:
+            phone = phone.strip()
+            if phone and not all(char.isdigit() or char in '+-() ' for char in phone):
+                errors['phone'] = ['Утасны дугаарт тоо болон + - ( ) л орно.']
+            else:
+                user.phone = phone
+
+    if 'birth_date' in body:
+        raw = body['birth_date']
+        if raw in (None, ''):
+            user.birth_date = None
+        elif not isinstance(raw, str):
+            errors['birth_date'] = ['Төрсөн огноог YYYY-MM-DD хэлбэрээр оруулна уу.']
+        else:
+            parsed = parse_date(raw.strip())
+            if parsed is None:
+                errors['birth_date'] = ['Төрсөн огноог YYYY-MM-DD хэлбэрээр оруулна уу.']
+            elif parsed > timezone.localdate():
+                errors['birth_date'] = ['Төрсөн огноо ирээдүйд байж болохгүй.']
+            else:
+                user.birth_date = parsed
+
+    if errors:
+        return JsonResponse({'message': 'Мэдээллээ шалгана уу.', 'errors': errors}, status=400)
+
+    user.save(update_fields=['name', 'phone', 'birth_date'])
+    return JsonResponse({'message': 'Профайлыг шинэчиллээ.', 'user': user_data(user)})

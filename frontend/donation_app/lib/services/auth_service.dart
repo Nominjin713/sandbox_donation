@@ -169,6 +169,39 @@ class AuthService {
     await _clearSession();
   }
 
+  /// ШИНЭ: нэвтэрсэн хэрэглэгч өөрийн профайлаа засна.
+  /// Зөвхөн өгсөн талбарууд шинэчлэгдэнэ.
+  Future<Map<String, dynamic>> updateProfile({
+    String? name,
+    String? phone,
+    String? birthDate,
+  }) async {
+    final body = <String, dynamic>{
+      if (name != null) 'name': name.trim(),
+      if (phone != null) 'phone': phone.trim(),
+      if (birthDate != null) 'birth_date': birthDate.trim(),
+    };
+    if (body.isEmpty) {
+      throw const AuthException('Өөрчлөх мэдээлэл алга байна.');
+    }
+    final data = await request('/auth/profile', body: body, post: true);
+    final user = data['user'];
+    if (user is Map<String, dynamic>) {
+      final updatedName = (user['name'] as String?)?.trim();
+      final session = currentSession;
+      if (session != null && updatedName != null && updatedName.isNotEmpty) {
+        currentSession = AuthSession(
+          token: session.token,
+          name: updatedName,
+          email: session.email,
+        );
+        await _saveSession(currentSession!);
+      }
+      return user;
+    }
+    return <String, dynamic>{};
+  }
+
   Future<Map<String, dynamic>> request(
     String path, {
     Map<String, dynamic>? body,

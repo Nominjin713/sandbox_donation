@@ -9,11 +9,12 @@ import 'package:latlong2/latlong.dart';
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import 'auth_page.dart';
+import '../theme/app_theme.dart';
 
-const Color primaryBlue = Color(0xFF7353BA);
-const Color darkBlue = Color(0xFF39275F);
-const Color backgroundBlue = Color(0xFFF8F6FF);
-const Color borderBlue = Color(0xFFE7E0F3);
+const Color primaryBlue = Color(0xFF0C92AC);
+const Color darkBlue = Color(0xFF0B4A57);
+const Color backgroundBlue = Color(0xFFF3FCFE);
+const Color borderBlue = Color(0xFFC3EBF3);
 
 class CreateEventPage extends StatefulWidget {
   const CreateEventPage({
@@ -212,10 +213,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundBlue,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        flexibleSpace: const BrandAppBarBackground(),
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.only(left: 10),
@@ -234,7 +236,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               ? 'Үйл ажиллагаа бүртгэх'
               : 'Үйл ажиллагаа засах',
           style: const TextStyle(
-            color: darkBlue,
+            color: brandInk,
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -394,7 +396,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             child: Text(
                               'Хэдэн сайн дурын ажилтан оролцохыг зааж өгнө үү.',
                               style: TextStyle(
-                                color: Color(0xFF6E84A8),
+                                color: Color(0xFF4F7F8B),
                                 fontSize: 12,
                                 height: 1.5,
                               ),
@@ -433,7 +435,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                                 'Сайн үйлсийг хамтдаа бүтээцгээе 💙',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Color(0xFF7185A5),
+                                  color: Color(0xFF6E9AA4),
                                   fontSize: 12,
                                 ),
                               ),
@@ -474,7 +476,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   width: 62,
                   height: 62,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0EBFA),
+                    color: const Color(0xFFD6F6FC),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
@@ -495,7 +497,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 const SizedBox(height: 4),
                 const Text(
                   'JPG эсвэл PNG, 5MB хүртэл',
-                  style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
+                  style: TextStyle(color: Color(0xFF6E9AA4), fontSize: 12),
                 ),
               ],
             ),
@@ -556,13 +558,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(23),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF7353BA), Color(0xFF60429F), Color(0xFF39275F)],
-        ),
+        gradient: brandHeroGradient,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFFFD166), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 1.4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,13 +568,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
+              color: Colors.white.withValues(alpha: 0.62),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Text(
               '✦  VOLUNTEER HUB',
               style: TextStyle(
-                color: const Color(0xFFFFD166),
+                color: brandInk,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1,
@@ -587,7 +585,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           const Text(
             'Шинэ үйл ажиллагаа\nүүсгэцгээе!',
             style: TextStyle(
-              color: Colors.white,
+              color: brandInk,
               fontSize: 27,
               fontWeight: FontWeight.w900,
               height: 1.25,
@@ -597,7 +595,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           const SizedBox(height: 11),
           const Text(
             'Санаачилгаа хуваалцаж, бусдад урам зориг өгөөрэй.',
-            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.7),
+            style: TextStyle(color: Color(0xFF2E6472), fontSize: 13, height: 1.7),
           ),
           const SizedBox(height: 16),
           Align(
@@ -606,12 +604,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
               width: 78,
               height: 70,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD166),
+                color: Colors.white.withValues(alpha: 0.75),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Icon(
                 Icons.event_available_rounded,
-                color: darkBlue,
+                color: primaryBlue,
                 size: 42,
               ),
             ),
@@ -646,7 +644,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           else
             const Text(
               '(заавал биш)',
-              style: TextStyle(color: Color(0xFF94A5C0), fontSize: 12),
+              style: TextStyle(color: Color(0xFF8FB6BE), fontSize: 12),
             ),
         ],
       ),
@@ -681,7 +679,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(
-          color: Color(0xFF94A5C0),
+          color: Color(0xFF8FB6BE),
           fontSize: 13,
           fontWeight: FontWeight.normal,
         ),
@@ -745,7 +743,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         children: [
           const Text(
             'Үйл ажиллагааны төрлөө сонгоно уу',
-            style: TextStyle(color: Color(0xFF7185A5), fontSize: 12),
+            style: TextStyle(color: Color(0xFF6E9AA4), fontSize: 12),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -769,7 +767,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: selected ? const Color(0xFFF0EBFA) : Colors.white,
+                    color: selected ? const Color(0xFFD6F6FC) : Colors.white,
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
                       color: selected ? primaryBlue : borderBlue,
@@ -782,7 +780,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       Icon(
                         icons[index],
                         size: 17,
-                        color: selected ? primaryBlue : const Color(0xFF8295B5),
+                        color: selected ? primaryBlue : const Color(0xFF6E9AA4),
                       ),
                       const SizedBox(width: 7),
                       Text(
@@ -900,7 +898,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0EBFA),
+              color: const Color(0xFFD6F6FC),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -924,9 +922,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       width: double.infinity,
       height: 59,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9B83D2), Color(0xFF7353BA), Color(0xFF60429F)],
-        ),
+        gradient: brandGradient,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -942,7 +938,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           backgroundColor: Colors.transparent,
           disabledBackgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          foregroundColor: Colors.white,
+          foregroundColor: brandInk,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -953,7 +949,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: brandInk,
                 ),
               )
             : const Icon(Icons.send_rounded, size: 21),
@@ -1082,12 +1078,13 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundBlue,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Байршил сонгох'),
         centerTitle: true,
-        backgroundColor: backgroundBlue,
-        foregroundColor: darkBlue,
+        backgroundColor: Colors.transparent,
+        foregroundColor: brandInk,
+        flexibleSpace: const BrandAppBarBackground(),
         surfaceTintColor: Colors.transparent,
       ),
       body: Column(

@@ -1,4 +1,4 @@
-﻿from uuid import uuid4
+from uuid import uuid4
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -111,3 +111,54 @@ class Notification(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=['user', 'is_read', '-sent_at'], name='notification_inbox_idx')]
+
+
+class EventComment(models.Model):
+    """Үйл ажиллагааны дэлгэрэнгүй хуудас дээрх сэтгэгдэл."""
+
+    MAX_LENGTH = 1000
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='comments',
+                              verbose_name='Арга хэмжээ')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             related_name='event_comments', verbose_name='Хэрэглэгч')
+    # ШИНЭ: хариу (reply). Хоосон бол үндсэн сэтгэгдэл.
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE,
+                               related_name='replies', verbose_name='Хариу бичсэн сэтгэгдэл')
+    content = models.TextField(max_length=MAX_LENGTH, blank=True, verbose_name='Сэтгэгдэл')
+    # ШИНЭ: хавсаргасан зургийн URL
+    zurag = models.CharField(max_length=500, blank=True, default='', verbose_name='Зураг')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Бичсэн огноо')
+
+    def clean(self):
+        super().clean()
+        if not (self.content or '').strip() and not (self.zurag or '').strip():
+            raise ValidationError({'content': 'Сэтгэгдэл эсвэл зураг оруулна уу.'})
+        if self.parent_id and self.parent.parent_id:
+            raise ValidationError({'parent': 'Хариуны хариу бичих боломжгүй.'})
+
+    def __str__(self):
+        return f'{self.user_id}: {self.content[:40]}'
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+        verbose_name = 'Сэтгэгдэл'
+        verbose_name_plural = 'Сэтгэгдлүүд'
+        indexes = [models.Index(fields=['event', '-created_at'], name='event_comment_feed_idx')]
+
+
+class CommentLike(models.Model):
+    """ШИНЭ: сэтгэгдэлд дарсан like."""
+
+    comment = models.ForeignKey(EventComment, on_delete=models.CASCADE, related_name='likes',
+                                verbose_name='Сэтгэгдэл')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             related_name='comment_likes', verbose_name='Хэрэглэгч')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Таалагдсан'
+        verbose_name_plural = 'Таалагдсан'
+        constraints = [
+            models.UniqueConstraint(fields=['comment', 'user'], name='unique_comment_like'),
+        ]

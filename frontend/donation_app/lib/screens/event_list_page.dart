@@ -7,19 +7,20 @@ import '../services/auth_service.dart';
 import '../services/event_service.dart';
 
 import 'event_detail_page.dart';
+import '../theme/app_theme.dart';
 
-const Color primaryBlue = Color(0xFF7353BA);
-const Color darkBlue = Color(0xFF39275F);
-const Color backgroundBlue = Color(0xFFF8F6FF);
-const Color borderBlue = Color(0xFFE7E0F3);
-const Color mutedText = Color(0xFF756D83);
-const Color joinedGreen = Color(0xFF7353BA);
+const Color primaryBlue = Color(0xFF0C92AC);
+const Color darkBlue = Color(0xFF0B4A57);
+const Color backgroundBlue = Color(0xFFF3FCFE);
+const Color borderBlue = Color(0xFFC3EBF3);
+const Color mutedText = Color(0xFF4F7F8B);
+const Color joinedGreen = Color(0xFF0C92AC);
 
 // ШИНЭ: хуудасны цэнхэр уусгалттай дэвсгэр (дээрээс доош цайрна)
 const LinearGradient pageGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFFF8F6FF), Color(0xFFF0EBFA), Color(0xFFFFF3D6)],
+  colors: [Color(0xFFF3FCFE), Color(0xFFD6F6FC), Color(0xFFFFF5D6)],
 );
 
 // Ангилал бүрийн зураг, icon, өнгө
@@ -34,34 +35,40 @@ class _CategoryStyle {
     'Байгаль орчин': _CategoryStyle(
       'assets/images/environment.jpg',
       Icons.park_rounded,
-      primaryBlue,
-      Color(0xFFF0EBFA),
+      Color(0xFF2BA86E), // ногоон
+      Color(0xFFDFF5EA),
     ),
     'Нийгмийн халамж': _CategoryStyle(
       'assets/images/social.jpg',
       Icons.volunteer_activism_rounded,
-      primaryBlue,
-      Color(0xFFFFF3D6),
+      Color(0xFFE2566A), // улаан
+      Color(0xFFFDE7EA),
     ),
     'Цэвэр орчин': _CategoryStyle(
       'assets/images/cleanup.jpg',
       Icons.cleaning_services_rounded,
-      primaryBlue,
-      Color(0xFFF0EBFA),
+      Color(0xFF0C92AC), // усан цэнхэр
+      Color(0xFFD6F6FC),
     ),
     'Боловсрол': _CategoryStyle(
       'assets/images/education.jpg',
       Icons.menu_book_rounded,
-      primaryBlue,
-      Color(0xFFF0EBFA),
+      Color(0xFF7A5BD6), // ягаавтар
+      Color(0xFFEDE7FB),
+    ),
+    'Бусад': _CategoryStyle(
+      'assets/images/other.jpg',
+      Icons.auto_awesome_rounded,
+      Color(0xFFE2743B), // улбар шар
+      Color(0xFFFCEADF),
     ),
   };
 
   static const _other = _CategoryStyle(
     'assets/images/other.jpg',
     Icons.favorite_rounded,
-    primaryBlue,
-    Color(0xFFF0EBFA),
+    Color(0xFFD99A00),
+    Color(0xFFFFF5D6),
   );
 
   static _CategoryStyle of(String? category) => _styles[category] ?? _other;
@@ -127,6 +134,8 @@ class _EventListPageState extends State<EventListPage> {
             : categoryCode(_selectedCategory),
         offset: more ? _nextOffset! : 0,
         upcoming: true, // ШИНЭ: зөвхөн дуусаагүй (нээлттэй) үйл ажиллагаа
+        year: _selectedYear, // ШИНЭ
+        month: _selectedMonth, // ШИНЭ
       );
       if (mounted && version == _version) {
         setState(() {
@@ -155,12 +164,49 @@ class _EventListPageState extends State<EventListPage> {
 
   void _resetFilters() {
     _searchController.clear();
-    setState(() => _selectedCategory = 'Бүгд');
+    setState(() {
+      _selectedCategory = 'Бүгд';
+      _selectedYear = null;
+      _selectedMonth = null;
+    });
     _searchTimer?.cancel();
     _load();
   }
 
   String _selectedCategory = 'Бүгд';
+
+  // ШИНЭ: он / сараар шүүх
+  int? _selectedYear;
+  int? _selectedMonth;
+
+  static const List<String> monthNames = [
+    '1-р сар', '2-р сар', '3-р сар', '4-р сар', '5-р сар', '6-р сар',
+    '7-р сар', '8-р сар', '9-р сар', '10-р сар', '11-р сар', '12-р сар',
+  ];
+
+  /// Энэ сараас эхлээд 12 сарын сонголт (он дамжина).
+  List<({int year, int month})> get _monthOptions {
+    final now = DateTime.now();
+    return List.generate(12, (index) {
+      final date = DateTime(now.year, now.month + index);
+      return (year: date.year, month: date.month);
+    });
+  }
+
+  /// Энэ жилийнх бол зөвхөн "11-р сар", өөр жилийнх бол "1-р сар 2027".
+  String _monthLabel(int year, int month) {
+    final label = monthNames[month - 1];
+    return year == DateTime.now().year ? label : '$label $year';
+  }
+
+  void _pickMonth(int? year, int? month) {
+    setState(() {
+      _selectedYear = year;
+      _selectedMonth = month;
+    });
+    _searchTimer?.cancel();
+    _load();
+  }
 
   static const List<String> categories = [
     'Бүгд',
@@ -209,6 +255,7 @@ class _EventListPageState extends State<EventListPage> {
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
+              flexibleSpace: const BrandAppBarBackground(),
               elevation: 0,
               leading: Padding(
                 padding: const EdgeInsets.only(left: 10),
@@ -225,7 +272,7 @@ class _EventListPageState extends State<EventListPage> {
               title: const Text(
                 'Үйл ажиллагаанууд',
                 style: TextStyle(
-                  color: darkBlue,
+                  color: brandInk,
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
                 ),
@@ -235,7 +282,7 @@ class _EventListPageState extends State<EventListPage> {
                 IconButton(
                   tooltip: 'Шинэчлэх',
                   onPressed: _loading ? null : () => _load(),
-                  icon: const Icon(Icons.refresh_rounded, color: primaryBlue),
+                  icon: const Icon(Icons.refresh_rounded, color: brandInk),
                 ),
               ],
             ),
@@ -257,7 +304,8 @@ class _EventListPageState extends State<EventListPage> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: _PinnedBar(
-                        height: 128,
+                        // 52 (хайлт) + 12 + 40 (ангилал) + 8 + 40 (он/сар)
+                        height: 164,
                         child: _buildFilterBar(),
                       ),
                     ),
@@ -543,7 +591,7 @@ class _EventListPageState extends State<EventListPage> {
               decoration: InputDecoration(
                 hintText: 'Нэр, байршлаар хайх',
                 hintStyle: const TextStyle(
-                  color: Color(0xFF8A9BB6),
+                  color: Color(0xFF8FB6BE),
                   fontSize: 13,
                 ),
                 prefixIcon: const Icon(
@@ -560,7 +608,7 @@ class _EventListPageState extends State<EventListPage> {
                         },
                         icon: const Icon(
                           Icons.close_rounded,
-                          color: Color(0xFF8A9BB6),
+                          color: Color(0xFF8FB6BE),
                         ),
                       )
                     : null,
@@ -596,39 +644,72 @@ class _EventListPageState extends State<EventListPage> {
               final selected = _selectedCategory == category;
               final style = _CategoryStyle.of(category);
 
-              return ChoiceChip(
-                avatar: category == 'Бүгд'
-                    ? null
-                    : Icon(
-                        style.icon,
-                        size: 15,
-                        color: selected ? Colors.white : style.accent,
-                      ),
-                label: Text(category),
+              // ШИНЭ: ангилал бүр өөрийн өнгөтэй, сонгоход өнгө нь хувирна
+              final accent = category == 'Бүгд'
+                  ? brandAquaDeep
+                  : style.accent;
+
+              return _CategoryChip(
+                label: category,
+                icon: category == 'Бүгд' ? Icons.apps_rounded : style.icon,
+                accent: accent,
+                pale: category == 'Бүгд'
+                    ? const Color(0xFFD6F6FC)
+                    : style.pale,
                 selected: selected,
-                showCheckmark: false,
-                onSelected: (_) {
+                onTap: () {
                   setState(() => _selectedCategory = category);
                   _searchTimer?.cancel();
                   _load();
                 },
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : darkBlue,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-                backgroundColor: Colors.white,
-                selectedColor: darkBlue,
-                side: BorderSide(color: selected ? darkBlue : borderBlue),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               );
             },
           ),
         ),
+        const SizedBox(height: 8),
+        _buildMonthStrip(),
       ],
+    );
+  }
+
+  /// ШИНЭ: нэг даралтаар сараа сонгох тууз.
+  Widget _buildMonthStrip() {
+    final now = DateTime.now();
+    final options = _monthOptions;
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        itemCount: options.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _MonthChip(
+              label: 'Бүх сар',
+              icon: Icons.date_range_rounded,
+              selected: _selectedMonth == null,
+              onTap: () => _pickMonth(null, null),
+            );
+          }
+
+          final option = options[index - 1];
+          final selected =
+              _selectedYear == option.year && _selectedMonth == option.month;
+          final isThisMonth =
+              option.year == now.year && option.month == now.month;
+
+          return _MonthChip(
+            label: _monthLabel(option.year, option.month),
+            marker: isThisMonth ? 'Энэ сар' : null,
+            selected: selected,
+            onTap: () => selected
+                ? _pickMonth(null, null)
+                : _pickMonth(option.year, option.month),
+          );
+        },
+      ),
     );
   }
 
@@ -647,7 +728,7 @@ class _EventListPageState extends State<EventListPage> {
             width: 84,
             height: 84,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5F0FF),
+              color: const Color(0xFFEAFAFD),
               borderRadius: BorderRadius.circular(28),
             ),
             child: Icon(icon, color: primaryBlue, size: 40),
@@ -704,12 +785,12 @@ class _EventsSidebar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: primaryBlue,
+                gradient: brandGradient,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: const Icon(
                 Icons.volunteer_activism_rounded,
-                color: Colors.white,
+                color: brandInk,
               ),
             ),
             const SizedBox(width: 10),
@@ -752,7 +833,7 @@ class _EventsSidebar extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF3D6),
+            color: const Color(0xFFFFF5D6),
             borderRadius: BorderRadius.circular(15),
           ),
           child: const Column(
@@ -797,7 +878,7 @@ class _EventsNavItem extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 5),
     child: Material(
-      color: selected ? const Color(0xFFF0EBFA) : Colors.transparent,
+      color: selected ? const Color(0xFFD6F6FC) : Colors.transparent,
       borderRadius: BorderRadius.circular(11),
       child: InkWell(
         onTap: onTap,
@@ -873,7 +954,7 @@ class _EventsSummary extends StatelessWidget {
                       : (count / 40).clamp(0.0, 1.0).toDouble(),
                   minHeight: 7,
                   color: primaryBlue,
-                  backgroundColor: const Color(0xFFF0EBFA),
+                  backgroundColor: const Color(0xFFD6F6FC),
                 ),
               ),
               const SizedBox(height: 7),
@@ -918,7 +999,7 @@ class _EventsSummary extends StatelessWidget {
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF3D6),
+                                color: const Color(0xFFFFF5D6),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
@@ -952,7 +1033,7 @@ class _EventsSummary extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF3D6),
+            color: const Color(0xFFFFF5D6),
             borderRadius: BorderRadius.circular(15),
           ),
           child: const Text(
@@ -1096,8 +1177,8 @@ class _EventCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: const Color(0xFFEEF3FB),
-                      color: isFull ? const Color(0xFFE5A23B) : style.accent,
+                      backgroundColor: const Color(0xFFEAFAFD),
+                      color: isFull ? const Color(0xFFFFA726) : style.accent,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1115,7 +1196,7 @@ class _EventCard extends StatelessWidget {
                       Text(
                         isFull ? 'Дүүрсэн' : '${slots - joined} сул орон',
                         style: TextStyle(
-                          color: isFull ? const Color(0xFFC77F12) : mutedText,
+                          color: isFull ? const Color(0xFF8A6200) : mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1141,7 +1222,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF8295B2)),
+        Icon(icon, size: 16, color: const Color(0xFF6E9AA4)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -1328,7 +1409,7 @@ class _SkeletonCard extends StatelessWidget {
     width: width,
     height: height,
     decoration: BoxDecoration(
-      color: const Color(0xFFEEF3FB),
+      color: const Color(0xFFEAFAFD),
       borderRadius: BorderRadius.circular(6),
     ),
   );
@@ -1347,7 +1428,7 @@ class _SkeletonCard extends StatelessWidget {
         children: [
           const AspectRatio(
             aspectRatio: 16 / 10,
-            child: ColoredBox(color: Color(0xFFE9EFF8)),
+            child: ColoredBox(color: Color(0xFFDDF4F8)),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -1365,6 +1446,182 @@ class _SkeletonCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+// ШИНЭ: ангиллын өнгөт chip. Сонгоход өнгө нь зөөлөн хувирна.
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.pale,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final Color pale;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(25),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? accent : pale,
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(
+              color: selected ? accent : accent.withValues(alpha: .28),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: .32),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 240),
+                transitionBuilder: (child, animation) =>
+                    ScaleTransition(scale: animation, child: child),
+                child: Icon(
+                  icon,
+                  key: ValueKey<bool>(selected),
+                  size: 15,
+                  color: selected ? Colors.white : accent,
+                ),
+              ),
+              const SizedBox(width: 7),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 240),
+                style: TextStyle(
+                  color: selected ? Colors.white : brandInk,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                child: Text(label),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ШИНЭ: нэг даралтаар сонгогддог сарын chip.
+class _MonthChip extends StatelessWidget {
+  const _MonthChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+    this.marker,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  /// "Энэ сар" гэх мэт жижиг тэмдэглэгээ.
+  final String? marker;
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = brandAquaDeep;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(25),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? accent : Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(
+              color: selected ? accent : accent.withValues(alpha: .25),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: .3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 15,
+                  color: selected ? Colors.white : accent,
+                ),
+                const SizedBox(width: 7),
+              ],
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                style: TextStyle(
+                  color: selected ? Colors.white : brandInk,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                child: Text(label),
+              ),
+              if (marker != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? Colors.white.withValues(alpha: .25)
+                        : brandYellowSoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    marker!,
+                    style: TextStyle(
+                      color: selected ? Colors.white : brandYellowDeep,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

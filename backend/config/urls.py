@@ -15,10 +15,11 @@ def api_index(request):
         ('POST', '/auth/forgot-password', 'Нууц үг сэргээх хүсэлт'),
         ('POST', '/auth/reset-password', 'Нууц үг шинэчлэх'),
         ('GET', '/auth/me', 'Нэвтэрсэн хэрэглэгч'),
+        ('POST', '/auth/profile', 'Профайл засах'),
         ('POST', '/auth/logout', 'Гарах'),
         ('POST', '/auth/verify-email', 'Имэйл баталгаажуулах'),
         ('POST', '/auth/resend-verification', 'Баталгаажуулах код дахин илгээх'),
-        ('GET', '/events/', 'Арга хэмжээний жагсаалт'),
+        ('GET', '/events/?year=&month=', 'Арга хэмжээний жагсаалт (он/сараар шүүнэ)'),
         ('POST', '/events/create', 'Арга хэмжээ үүсгэх'),
         ('POST', '/events/upload-image/', 'Зураг upload хийх'),
         ('GET', '/events/<event_id>/', 'Арга хэмжээний дэлгэрэнгүй'),
@@ -26,6 +27,10 @@ def api_index(request):
         ('POST', '/events/<event_id>/delete', 'Арга хэмжээ устгах'),
         ('POST', '/events/<event_id>/join', 'Арга хэмжээнд бүртгүүлэх'),
         ('POST', '/events/<event_id>/leave', 'Бүртгэл цуцлах'),
+        ('GET', '/events/<event_id>/comments', 'Сэтгэгдлийн жагсаалт'),
+        ('POST', '/events/<event_id>/comments', 'Сэтгэгдэл бичих'),
+        ('POST', '/events/<event_id>/comments/<id>/delete', 'Сэтгэгдэл устгах'),
+        ('POST', '/events/<event_id>/comments/<id>/like', 'Сэтгэгдэлд таалагдсан дарах'),
     ]
     rows = ''.join(
         f'<tr><td><code>{escape(method)}</code></td><td><code>{escape(path)}</code></td>'
@@ -36,9 +41,9 @@ def api_index(request):
         '<!doctype html><html lang="mn"><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<title>Donation API</title><style>'
-        'body{font:16px system-ui;max-width:900px;margin:40px auto;padding:0 18px;color:#252033}'
+        'body{font:16px system-ui;max-width:900px;margin:40px auto;padding:0 18px;color:#0b4a57}'
         'table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:10px;border-bottom:1px solid #ddd}'
-        'th{background:#f8f6ff}code{color:#7353ba}a{color:#7353ba}'
+        'th{background:#eafafd}code{color:#0c92ac}a{color:#0c92ac}'
         '</style><h1>Donation API</h1><p>Үндсэн хаяг: <code>'
         f'{escape(request.scheme)}://{escape(request.get_host())}</code></p>'
         '<table><thead><tr><th>Method</th><th>Endpoint</th><th>Тайлбар</th></tr></thead>'
@@ -56,6 +61,7 @@ urlpatterns = [
     path('auth/forgot-password', views.forgot_password),
     path('auth/reset-password', views.reset_password_view),
     path('auth/me', views.me),
+    path('auth/profile', views.update_profile),
     path('auth/logout', views.logout),
     path('auth/verify-email', views.verify),
     path('auth/resend-verification', views.resend_verification),

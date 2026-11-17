@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'forgot_password_page.dart';
 import 'auth_style.dart';
+import '../theme/app_theme.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, this.authService, this.register = false});
@@ -124,10 +125,11 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: authBackground,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: authBackground,
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        flexibleSpace: const BrandAppBarBackground(),
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.only(left: 10),
@@ -145,7 +147,7 @@ class _AuthPageState extends State<AuthPage> {
         title: const Text(
           'Volunteer Hub',
           style: TextStyle(
-            color: authDarkBlue,
+            color: brandInk,
             fontWeight: FontWeight.w900,
             fontSize: 18,
           ),
@@ -169,7 +171,7 @@ class _AuthPageState extends State<AuthPage> {
                       const Text(
                         '💙 Сайн үйлсэд хамтдаа!',
                         style: TextStyle(
-                          color: Color(0xFF8295B2),
+                          color: Color(0xFF6E9AA4),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -193,7 +195,7 @@ class _AuthPageState extends State<AuthPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFF0EBFA), Color(0xFFF8F6FF), Color(0xFFFFF3D6)],
+          colors: [Color(0xFFD6F6FC), Color(0xFFF3FCFE), Color(0xFFFFF5D6)],
         ),
         borderRadius: BorderRadius.circular(29),
         border: Border.all(color: Colors.white, width: 2),
@@ -243,7 +245,7 @@ class _AuthPageState extends State<AuthPage> {
                 ? 'Шинэ бүртгэл үүсгээд бусдад туслах аяллаа эхлүүлээрэй.'
                 : 'Нэвтэрч, өөрийн сонирхолд тохирох сайн дурын ажлуудаа олоорой.',
             style: const TextStyle(
-              color: Color(0xFF647D9F),
+              color: Color(0xFF4F7F8B),
               fontSize: 13,
               height: 1.7,
             ),
@@ -337,7 +339,7 @@ class _AuthPageState extends State<AuthPage> {
                     ? 'Мэдээллээ оруулаад бүртгэлээ үүсгээрэй.'
                     : 'Имэйл болон нууц үгээ оруулна уу.',
                 style: const TextStyle(
-                  color: Color(0xFF7C8EAA),
+                  color: Color(0xFF6E9AA4),
                   fontSize: 12,
                   height: 1.6,
                 ),
@@ -443,7 +445,7 @@ class _AuthPageState extends State<AuthPage> {
                             _hide
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: const Color(0xFF8295B2),
+                            color: const Color(0xFF6E9AA4),
                           ),
                         ),
                       ),
@@ -486,7 +488,7 @@ class _AuthPageState extends State<AuthPage> {
                               _hideConfirm
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
-                              color: const Color(0xFF8295B2),
+                              color: const Color(0xFF6E9AA4),
                             ),
                           ),
                         ),
@@ -597,7 +599,7 @@ class _AuthPageState extends State<AuthPage> {
                               : _register
                               ? 'Бүртгэлтэй юу? '
                               : 'Бүртгэлгүй юу? ',
-                          style: const TextStyle(color: Color(0xFF7C8EAA)),
+                          style: const TextStyle(color: Color(0xFF6E9AA4)),
                         ),
                         TextSpan(
                           text: _verifying
@@ -626,7 +628,7 @@ class _AuthPageState extends State<AuthPage> {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F5FF),
+        color: const Color(0xFFEAFAFD),
         borderRadius: BorderRadius.circular(17),
       ),
       child: Row(
@@ -683,7 +685,7 @@ class _AuthPageState extends State<AuthPage> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? authBlue : const Color(0xFF8295B2),
+              color: selected ? authBlue : const Color(0xFF6E9AA4),
               fontSize: 12,
               fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
             ),
@@ -722,10 +724,10 @@ class _AuthPageState extends State<AuthPage> {
   InputDecoration _decoration({required String hint, required IconData icon}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFF9AAAC2), fontSize: 12),
+      hintStyle: const TextStyle(color: Color(0xFF8FB6BE), fontSize: 12),
       prefixIcon: Icon(icon, color: authBlue, size: 21),
       filled: true,
-      fillColor: const Color(0xFFFAFCFF),
+      fillColor: const Color(0xFFF7FDFF),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(17),
@@ -755,9 +757,7 @@ class _AuthPageState extends State<AuthPage> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9B83D2), Color(0xFF7353BA), Color(0xFF60429F)],
-        ),
+        gradient: brandGradient,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -773,7 +773,7 @@ class _AuthPageState extends State<AuthPage> {
           backgroundColor: Colors.transparent,
           disabledBackgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          foregroundColor: Colors.white,
+          foregroundColor: brandInk,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -783,7 +783,7 @@ class _AuthPageState extends State<AuthPage> {
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: brandInk,
                   strokeWidth: 2,
                 ),
               )

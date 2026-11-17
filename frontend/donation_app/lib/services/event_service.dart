@@ -74,6 +74,87 @@ class EventRecord {
   };
 }
 
+
+/// ШИНЭ: Үйл ажиллагааны сэтгэгдэл (зураг, таалагдсан, хариу дэмжинэ)
+class EventComment {
+  const EventComment({
+    required this.id,
+    required this.parentId,
+    required this.content,
+    required this.imageUrl,
+    required this.authorName,
+    required this.createdAt,
+    required this.isMine,
+    required this.likeCount,
+    required this.likedByMe,
+    required this.replies,
+  });
+
+  factory EventComment.fromJson(Map<String, dynamic> data) => EventComment(
+    id: data['id'] as int,
+    parentId: data['parent_id'] as int?,
+    content: data['content'] as String? ?? '',
+    imageUrl: EventRecord._cleanUrl(data['zurag']),
+    authorName: (data['author_name'] as String?)?.trim().isNotEmpty == true
+        ? (data['author_name'] as String).trim()
+        : 'Хэрэглэгч',
+    createdAt: DateTime.parse(data['created_at'] as String).toLocal(),
+    isMine: data['is_mine'] as bool? ?? false,
+    likeCount: data['like_count'] as int? ?? 0,
+    likedByMe: data['liked_by_me'] as bool? ?? false,
+    replies:
+        (data['replies'] as List?)
+            ?.map((item) => EventComment.fromJson(item as Map<String, dynamic>))
+            .toList() ??
+        const <EventComment>[],
+  );
+
+  final int id;
+  final int? parentId;
+  final String content;
+  final String? imageUrl;
+  final String authorName;
+  final DateTime createdAt;
+  final bool isMine;
+  final int likeCount;
+  final bool likedByMe;
+  final List<EventComment> replies;
+
+  bool get hasImage => imageUrl != null;
+  bool get isReply => parentId != null;
+
+  /// Эхний үсэг — дүрс тэмдэгт ашиглана.
+  String get initial =>
+      authorName.isEmpty ? '?' : authorName.substring(0, 1).toUpperCase();
+
+  /// "5 минутын өмнө" маягийн харьцангуй хугацаа.
+  String get timeLabel {
+    final diff = DateTime.now().difference(createdAt);
+    if (diff.inSeconds < 60) return 'Саяхан';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} минутын өмнө';
+    if (diff.inHours < 24) return '${diff.inHours} цагийн өмнө';
+    if (diff.inDays < 7) return '${diff.inDays} хоногийн өмнө';
+    return EventRecord.dateLabel(createdAt);
+  }
+
+  EventComment copyWith({
+    int? likeCount,
+    bool? likedByMe,
+    List<EventComment>? replies,
+  }) => EventComment(
+    id: id,
+    parentId: parentId,
+    content: content,
+    imageUrl: imageUrl,
+    authorName: authorName,
+    createdAt: createdAt,
+    isMine: isMine,
+    likeCount: likeCount ?? this.likeCount,
+    likedByMe: likedByMe ?? this.likedByMe,
+    replies: replies ?? this.replies,
+  );
+}
+
 class EventPage {
   EventPage.fromJson(Map<String, dynamic> data)
     : events = (data['events'] as List)
@@ -92,6 +173,9 @@ class EventService {
 
   // ШИНЭ: зургийн дээд хэмжээ (5 MB)
   static const maxImageBytes = 5 * 1024 * 1024;
+
+  // ШИНЭ: сэтгэгдлийн дээд урт
+  static const maxCommentLength = 1000;
 
   T _read<T>(T Function() parse) {
     try {
@@ -117,6 +201,8 @@ class EventService {
     int offset = 0,
     int limit = 20,
     bool upcoming = false,
+    int? year, // ШИНЭ: эхлэх огнооны он
+    int? month, // ШИНЭ: эхлэх огнооны сар (1-12)
   }) async {
     final params = Uri(
       queryParameters: {
@@ -125,6 +211,8 @@ class EventService {
         'offset': '$offset',
         'limit': '$limit',
         'upcoming': '$upcoming',
+        if (year != null) 'year': '$year',
+        if (month != null) 'month': '$month',
       },
     ).query;
     final data = await api.request('/events/?$params');
@@ -264,6 +352,70 @@ class EventService {
         .toList();
     return _read(
       () => (upcoming: parse(data['upcoming']), past: parse(data['past'])),
+    );
+  }
+
+  /// ШИНЭ: тухайн үйл ажиллагааны сэтгэгдлүүд (хариунууд нь дотроо)
+  Future<List<EventComment>> comments(String id) async {
+    final data = await api.request(
+      '/events/${Uri.encodeComponent(id)}/comments',
+    );
+    return _read<List<EventComment>>(
+      () => (data['comments'] as List)
+          .map((item) => EventComment.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// ШИНЭ: сэтгэгдэл эсвэл хариу бичих.
+  /// [parentId] өгвөл тухайн сэтгэгдэлд хариу болно.
+  /// [imageUrl] нь [uploadImage]-аас буцсан хаяг байна.
+  Future<EventComment> addComment(
+    String id, {
+    String content = '',
+    String? imageUrl,
+    int? parentId,
+  }) async {
+    final text = content.trim();
+    final image = EventRecord._cleanUrl(imageUrl);
+    if (text.isEmpty && image == null) {
+      throw const AuthException('Сэтгэгдэл эсвэл зураг оруулна уу.');
+    }
+    if (text.length > maxCommentLength) {
+      throw const AuthException(
+        'Сэтгэгдэл $maxCommentLength тэмдэгтээс хэтрэхгүй байх ёстой.',
+      );
+    }
+    final data = await api.request(
+      '/events/${Uri.encodeComponent(id)}/comments',
+      body: {
+        'content': text,
+        if (image != null) 'zurag': image,
+        if (parentId != null) 'parent': parentId,
+      },
+      post: true,
+    );
+    return _read<EventComment>(
+      () => EventComment.fromJson(data['comment'] as Map<String, dynamic>),
+    );
+  }
+
+  /// ШИНЭ: таалагдсан товчийг дарах / буцаах
+  Future<EventComment> likeComment(String eventId, int commentId) async {
+    final data = await api.request(
+      '/events/${Uri.encodeComponent(eventId)}/comments/$commentId/like',
+      post: true,
+    );
+    return _read<EventComment>(
+      () => EventComment.fromJson(data['comment'] as Map<String, dynamic>),
+    );
+  }
+
+  /// ШИНЭ: сэтгэгдэл устгах
+  Future<void> deleteComment(String eventId, int commentId) async {
+    await api.request(
+      '/events/${Uri.encodeComponent(eventId)}/comments/$commentId/delete',
+      post: true,
     );
   }
 }

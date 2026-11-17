@@ -7,13 +7,14 @@ import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import 'event_detail_page.dart';
 import 'profile_page.dart';
+import '../theme/app_theme.dart';
 
-const Color primaryBlue = Color(0xFF7353BA);
-const Color darkBlue = Color(0xFF39275F);
-const Color mutedText = Color(0xFF756D83);
-const Color lightBlue = Color(0xFFF0EBFA);
-const Color backgroundBlue = Color(0xFFF8F6FF);
-const Color softBorder = Color(0xFFE7E0F3);
+const Color primaryBlue = Color(0xFF0C92AC);
+const Color darkBlue = Color(0xFF0B4A57);
+const Color mutedText = Color(0xFF4F7F8B);
+const Color lightBlue = Color(0xFFD6F6FC);
+const Color backgroundBlue = Color(0xFFF3FCFE);
+const Color softBorder = Color(0xFFC3EBF3);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.authService});
@@ -123,7 +124,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundBlue,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -191,12 +192,12 @@ class _DesktopSidebar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: primaryBlue,
+                gradient: brandGradient,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: const Icon(
                 Icons.volunteer_activism_rounded,
-                color: Colors.white,
+                color: brandInk,
               ),
             ),
             const SizedBox(width: 10),
@@ -244,16 +245,44 @@ class _DesktopSidebar extends StatelessWidget {
         ),
         const Spacer(),
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF3D6),
-            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFFBEE), Color(0xFFFFF2CF)],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: brandYellow.withValues(alpha: .55)),
+            boxShadow: [
+              BoxShadow(
+                color: brandYellowDeep.withValues(alpha: .13),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.lightbulb_outline_rounded, color: primaryBlue),
-              const SizedBox(height: 8),
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: brandYellowDeep.withValues(alpha: .3),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.lightbulb_rounded,
+                  color: brandYellowDeep,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(height: 10),
               const Text(
                 'Санаагаа хуваалцаарай',
                 style: TextStyle(color: darkBlue, fontWeight: FontWeight.w700),
@@ -418,21 +447,72 @@ class _DashboardAside extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
+        // Өдрийн үг — хоосон шар тэгш өнцөгт биш, ишлэлийн карт болгов
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF3D6),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Text(
-            'Таны нэг цаг хэн нэгний амьдралд том өөрчлөлт авчирч чадна.',
-            style: TextStyle(
-              color: darkBlue,
-              fontSize: 12,
-              height: 1.5,
-              fontWeight: FontWeight.w600,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFFBEE), Color(0xFFFFF2CF)],
             ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: brandYellow.withValues(alpha: .55)),
+            boxShadow: [
+              BoxShadow(
+                color: brandYellowDeep.withValues(alpha: .13),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: brandYellowDeep.withValues(alpha: .3),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.format_quote_rounded,
+                      color: brandYellowDeep,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  const Text(
+                    'ӨДРИЙН ҮГ',
+                    style: TextStyle(
+                      color: brandYellowDeep,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 11),
+              const Text(
+                'Таны нэг цаг хэн нэгний амьдралд том өөрчлөлт авчирч чадна.',
+                style: TextStyle(
+                  color: darkBlue,
+                  fontSize: 12.5,
+                  height: 1.55,
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -477,7 +557,7 @@ class _AsideEvent extends StatelessWidget {
         width: 42,
         padding: const EdgeInsets.symmetric(vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF3D6),
+          color: const Color(0xFFFFF5D6),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -569,12 +649,12 @@ class _DashboardMain extends StatelessWidget {
                     width: 39,
                     height: 39,
                     decoration: BoxDecoration(
-                      color: primaryBlue,
+                      gradient: brandGradient,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.volunteer_activism_rounded,
-                      color: Colors.white,
+                      color: brandInk,
                       size: 22,
                     ),
                   ),
@@ -663,29 +743,29 @@ class _DashboardMain extends StatelessWidget {
               runSpacing: 7,
               children: List.generate(
                 categories.length,
-                (index) => ActionChip(
-                  avatar: Icon(
-                    categoryIcons[index],
-                    size: 15,
-                    color: primaryBlue,
-                  ),
-                  label: Text(categories[index]),
-                  onPressed: onEvents,
-                  backgroundColor: index == 0 ? lightBlue : Colors.white,
-                  side: BorderSide(
-                    color: index == 0
-                        ? primaryBlue.withValues(alpha: .25)
-                        : softBorder,
-                  ),
-                  labelStyle: const TextStyle(
-                    color: darkBlue,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
+                // ШИНЭ: ангилал бүр өөрийн өнгөтэй
+                (index) {
+                  final accent = brandAccents[index % brandAccents.length];
+                  return ActionChip(
+                    avatar: Icon(
+                      categoryIcons[index],
+                      size: 15,
+                      color: accent,
+                    ),
+                    label: Text(categories[index]),
+                    onPressed: onEvents,
+                    backgroundColor: brandAccentSurface(accent),
+                    side: BorderSide(color: accent.withValues(alpha: .28)),
+                    labelStyle: const TextStyle(
+                      color: darkBlue,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 25),
@@ -748,7 +828,7 @@ class _DashboardMain extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF3D6),
+                color: const Color(0xFFFFF5D6),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Row(
@@ -797,13 +877,13 @@ class _DashboardHero extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: .13),
+            color: Colors.white.withValues(alpha: .62),
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Text(
             'ХАМТДАА САЙН ҮЙЛС БҮТЭЭЕ',
             style: TextStyle(
-              color: Color(0xFFFFD166),
+              color: brandInk,
               fontSize: 9,
               fontWeight: FontWeight.w800,
               letterSpacing: .8,
@@ -814,7 +894,7 @@ class _DashboardHero extends StatelessWidget {
         const Text(
           'Жижиг үйлдэл.\nТом өөрчлөлт.',
           style: TextStyle(
-            color: Colors.white,
+            color: brandInk,
             fontSize: 27,
             fontWeight: FontWeight.w900,
             height: 1.12,
@@ -824,7 +904,7 @@ class _DashboardHero extends StatelessWidget {
         const SizedBox(height: 10),
         const Text(
           'Өөрийн цаг, сэтгэлээ зориулж нийгэмдээ эерэг өөрчлөлт авчраарай.',
-          style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+          style: TextStyle(color: Color(0xFF2E6472), fontSize: 12, height: 1.5),
         ),
         const SizedBox(height: 15),
         Wrap(
@@ -834,8 +914,8 @@ class _DashboardHero extends StatelessWidget {
             FilledButton(
               onPressed: onExplore,
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD166),
-                foregroundColor: darkBlue,
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 11,
@@ -849,8 +929,9 @@ class _DashboardHero extends StatelessWidget {
             OutlinedButton(
               onPressed: onCreate,
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white54),
+                foregroundColor: brandInk,
+                backgroundColor: Colors.white.withValues(alpha: .55),
+                side: const BorderSide(color: Colors.white),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 13,
                   vertical: 11,
@@ -878,7 +959,7 @@ class _DashboardHero extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: primaryBlue,
+        gradient: brandHeroGradient,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -959,7 +1040,7 @@ class _DashboardEventCard extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8F6FF),
+                        color: const Color(0xFFF3FCFE),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(

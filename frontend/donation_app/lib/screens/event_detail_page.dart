@@ -6,11 +6,14 @@ import 'package:latlong2/latlong.dart';
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import 'auth_page.dart';
+import 'comments_section.dart';
+import 'event_date_card.dart';
 import 'create_event_page.dart';
+import '../theme/app_theme.dart';
 
-const primaryBlue = Color(0xFF7353BA);
-const darkBlue = Color(0xFF39275F);
-const backgroundBlue = Color(0xFFF8F6FF);
+const primaryBlue = Color(0xFF0C92AC);
+const darkBlue = Color(0xFF0B4A57);
+const backgroundBlue = Color(0xFFF3FCFE);
 
 // ШИНЭ: зураггүй үйл ажиллагаанд ангиллын зургийг харуулна
 const Map<String, String> _categoryAssets = {
@@ -38,6 +41,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
   bool _loading = true;
   bool _busy = false;
   String? _error;
+
+  // ШИНЭ: сэтгэгдлийн хэсгийг гаднаас шинэчлэхэд ашиглана
+  final _commentsKey = GlobalKey<CommentsSectionState>();
 
   @override
   void initState() {
@@ -230,10 +236,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final full = event != null && event.participantCount >= event.capacity;
 
     return Scaffold(
-      backgroundColor: backgroundBlue,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: backgroundBlue,
-        foregroundColor: darkBlue,
+        backgroundColor: Colors.transparent,
+        foregroundColor: brandInk,
+        flexibleSpace: const BrandAppBarBackground(),
         elevation: 0,
         title: const Text(
           'Үйл ажиллагааны дэлгэрэнгүй',
@@ -273,7 +280,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: RefreshIndicator(
-            onRefresh: _load,
+            onRefresh: _refreshAll,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
@@ -315,22 +322,24 @@ class _EventDetailPageState extends State<EventDetailPage> {
                         ),
                         const SizedBox(height: 18),
 
-                        _info(
-                          Icons.calendar_month_outlined,
-                          'Эхлэх огноо',
-                          EventRecord.dateLabel(event.startsAt),
+                        // ШИНЭ: эхлэх / дуусах огноог календарь хэлбэрээр
+                        EventDateCard(
+                          startsAt: event.startsAt,
+                          endsAt: event.endsAt,
                         ),
 
-                        _info(
-                          Icons.event_available_outlined,
-                          'Дуусах огноо',
-                          EventRecord.dateLabel(event.endsAt),
-                        ),
+                        const SizedBox(height: 6),
 
                         _info(
-                          Icons.business_outlined,
+                          Icons.business_rounded,
                           'Зохион байгуулагч',
                           event.organization,
+                        ),
+
+                        _info(
+                          Icons.category_rounded,
+                          'Ангилал',
+                          eventCategories[event.category] ?? event.category,
                         ),
                       ],
                     ),
@@ -354,7 +363,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           style: const TextStyle(
                             height: 1.7,
                             fontSize: 15,
-                            color: Color(0xFF53647D),
+                            color: Color(0xFF3E6A75),
                           ),
                         ),
                       ],
@@ -379,10 +388,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0F6FF),
+                              color: const Color(0xFFEAFAFD),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: const Color(0xFFD9E7FF),
+                                color: const Color(0xFFBFE9F1),
                               ),
                             ),
                             child: Row(
@@ -489,7 +498,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           borderRadius: BorderRadius.circular(10),
                           child: LinearProgressIndicator(
                             minHeight: 9,
-                            backgroundColor: const Color(0xFFE7EEFA),
+                            backgroundColor: const Color(0xFFDDF4F8),
                             color: primaryBlue,
                             value: event.capacity <= 0
                                 ? 0
@@ -508,7 +517,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               ? 'Оролцогчдын тоо дүүрсэн байна.'
                               : 'Үлдсэн байр: '
                                     '${(event.capacity - event.participantCount).clamp(0, event.capacity)}',
-                          style: const TextStyle(color: Color(0xFF53647D)),
+                          style: const TextStyle(color: Color(0xFF3E6A75)),
                         ),
                       ],
                     ),
@@ -555,52 +564,38 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     const SizedBox(height: 14),
                   ],
 
-                  SizedBox(
-                    height: 54,
-                    child: FilledButton.icon(
-                      onPressed:
-                          _busy ||
-                              _loading ||
-                              (!event.isJoined && (closed || full))
-                          ? null
-                          : _participate,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: primaryBlue,
-                        disabledBackgroundColor: const Color(0xFFCFD8E8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      icon: _busy
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Icon(
-                              event.isJoined
-                                  ? Icons.cancel_outlined
-                                  : Icons.volunteer_activism,
-                            ),
-                      label: Text(
-                        _busy
-                            ? 'Түр хүлээнэ үү...'
-                            : event.isJoined
-                            ? 'Оролцохоо цуцлах'
-                            : closed
-                            ? 'Бүртгэл хаагдсан'
-                            : full
-                            ? 'Бүртгэл дүүрсэн'
-                            : 'Оролцох',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  BrandGradientButton(
+                    busy: _busy,
+                    onPressed:
+                        _busy ||
+                            _loading ||
+                            (!event.isJoined && (closed || full))
+                        ? null
+                        : _participate,
+                    icon: Icon(
+                      event.isJoined
+                          ? Icons.cancel_outlined
+                          : Icons.volunteer_activism,
                     ),
+                    label: _busy
+                        ? 'Түр хүлээнэ үү...'
+                        : event.isJoined
+                        ? 'Оролцохоо цуцлах'
+                        : closed
+                        ? 'Бүртгэл хаагдсан'
+                        : full
+                        ? 'Бүртгэл дүүрсэн'
+                        : 'Оролцох',
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ШИНЭ: сэтгэгдлийн хэсэг (зураг, like, хариу)
+                  CommentsSection(
+                    key: _commentsKey,
+                    eventId: widget.event['id'] ?? '',
+                    api: _api,
+                    service: _service,
                   ),
                 ],
               ],
@@ -611,6 +606,14 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
   }
 
+  // ШИНЭ: дэлгэрэнгүй болон сэтгэгдлийг зэрэг шинэчилнэ
+  Future<void> _refreshAll() async {
+    await Future.wait([
+      _load(),
+      _commentsKey.currentState?.load() ?? Future<void>.value(),
+    ]);
+  }
+
   // ШИНЭ: дээд хэсгийн зураг (эвентийн зураг, байхгүй бол ангиллын зураг)
   Widget _headerImage(EventRecord event) {
     final fallback = Image.asset(
@@ -618,11 +621,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => const DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF8C70C8), Color(0xFF60429F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: brandGradient,
         ),
       ),
     );
@@ -636,7 +635,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       loadingBuilder: (context, child, progress) => progress == null
           ? child
-          : const ColoredBox(color: Color(0xFFE9E2F7)),
+          : const ColoredBox(color: Color(0xFFD6F6FC)),
       errorBuilder: (context, error, stackTrace) => fallback,
     );
   }
@@ -652,7 +651,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
           clipBehavior: Clip.antiAlias,
           constraints: BoxConstraints(minHeight: minHeight),
           decoration: BoxDecoration(
-            color: primaryBlue,
+            gradient: brandGradient,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -675,8 +674,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Color(0x33000000),
-                        Color(0x0039275F),
-                        Color(0xE639275F),
+                        Color(0x00083844),
+                        Color(0xE6083844),
                       ],
                       stops: [0.0, 0.3, 1.0],
                     ),
@@ -782,7 +781,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFEAF0FA)),
+        border: Border.all(color: const Color(0xFFDDF4F8)),
         boxShadow: [
           BoxShadow(
             color: darkBlue.withValues(alpha: 0.035),
@@ -801,14 +800,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F6FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: primaryBlue, size: 21),
-          ),
+          // ШИНЭ: дарахад өнгөө солидог өнгөт icon
+          BrandTapIcon(icon: icon, seed: label, boxSize: 42, size: 21),
           const SizedBox(width: 13),
           Expanded(
             child: Column(
@@ -836,6 +829,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 }
 
+// ШИНЭ: нэг сэтгэгдлийн мөр
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.icon, required this.title});
 
@@ -846,14 +840,15 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: primaryBlue, size: 23),
-        const SizedBox(width: 10),
+        // ШИНЭ: дарах бүрд өнгөө солино
+        BrandTapIcon(icon: icon, seed: title, boxSize: 38, size: 20),
+        const SizedBox(width: 11),
         Expanded(
           child: Text(
             title,
             style: const TextStyle(
               fontSize: 17,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               color: darkBlue,
             ),
           ),
@@ -895,11 +890,12 @@ class _EventMapPageState extends State<EventMapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundBlue,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Үйл ажиллагааны байршил'),
-        backgroundColor: backgroundBlue,
-        foregroundColor: darkBlue,
+        backgroundColor: Colors.transparent,
+        foregroundColor: brandInk,
+        flexibleSpace: const BrandAppBarBackground(),
         elevation: 0,
       ),
       body: Column(
@@ -961,7 +957,7 @@ class _EventMapPageState extends State<EventMapPage> {
                   const SizedBox(height: 8),
                   Text(
                     widget.location,
-                    style: const TextStyle(color: Color(0xFF64748B)),
+                    style: const TextStyle(color: Color(0xFF4F7F8B)),
                   ),
                   const SizedBox(height: 12),
                   Text(

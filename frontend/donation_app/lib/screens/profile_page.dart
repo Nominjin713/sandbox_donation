@@ -4,15 +4,15 @@ import '../services/auth_service.dart';
 import '../services/event_service.dart';
 
 import 'event_detail_page.dart';
+import '../theme/app_theme.dart';
 
 // ================= ӨНГӨ (нүүр хуудастай ижил нил ягаан загвар) =================
-const Color _primary = Color(0xFF7353BA);
-const Color _dark = Color(0xFF39275F);
-const Color _muted = Color(0xFF756D83);
-const Color _light = Color(0xFFF0EBFA);
-const Color _background = Color(0xFFF8F6FF);
-const Color _border = Color(0xFFE7E0F3);
-const Color _gold = Color(0xFFFFD166);
+const Color _primary = Color(0xFF0C92AC);
+const Color _dark = Color(0xFF0B4A57);
+const Color _muted = Color(0xFF4F7F8B);
+const Color _light = Color(0xFFD6F6FC);
+const Color _border = Color(0xFFC3EBF3);
+const Color _gold = Color(0xFFD99A00);
 const Color _green = Color(0xFF2E9E6A);
 const Color _danger = Color(0xFFD64545);
 
@@ -233,6 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String get _email => _pick(['email', 'imeil', 'mail']);
   String get _phone => _pick(['phone', 'phone_number', 'utas']);
+  String get _birthDate => _pick(['birth_date', 'birthday', 'torson_ognoo']);
 
   String get _name {
     final direct = _pick(['full_name', 'name', 'ner', 'display_name']);
@@ -249,6 +250,29 @@ class _ProfilePageState extends State<ProfilePage> {
     return 'Хэрэглэгч';
   }
 
+  // ШИНЭ: профайл засах цонхыг нээнэ
+  Future<void> _openEditor() async {
+    final updated = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProfileEditSheet(
+        api: _api,
+        name: _name,
+        phone: _phone,
+        birthDate: _birthDate,
+      ),
+    );
+
+    if (!mounted || updated == null) return;
+
+    setState(() => _user = {..._user, ...updated});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Профайлыг шинэчиллээ.')),
+    );
+  }
+
   Future<void> _openEvent(EventRecord event) async {
     await Navigator.push(
       context,
@@ -263,20 +287,21 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        flexibleSpace: const BrandAppBarBackground(),
         elevation: 0,
         leading: IconButton(
           tooltip: 'Буцах',
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_rounded, color: _dark),
+          icon: const Icon(Icons.arrow_back_rounded, color: brandInk),
         ),
         title: const Text(
           'Миний профайл',
           style: TextStyle(
-            color: _dark,
+            color: brandInk,
             fontSize: 18,
             fontWeight: FontWeight.w800,
           ),
@@ -286,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
           IconButton(
             tooltip: 'Шинэчлэх',
             onPressed: _loading ? null : _load,
-            icon: const Icon(Icons.refresh_rounded, color: _primary),
+            icon: const Icon(Icons.refresh_rounded, color: brandInk),
           ),
           const SizedBox(width: 6),
         ],
@@ -397,7 +422,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _primary,
+        gradient: brandHeroGradient,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -446,7 +471,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: brandInk,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                       ),
@@ -459,12 +484,57 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 3),
                       _HeaderLine(icon: Icons.phone_outlined, text: _phone),
                     ],
+                    if (_birthDate.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      _HeaderLine(
+                        icon: Icons.cake_outlined,
+                        text: _birthDate,
+                      ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
+          // ШИНЭ: профайлаа засах
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Material(
+              color: Colors.white.withValues(alpha: .85),
+              borderRadius: BorderRadius.circular(25),
+              child: InkWell(
+                onTap: _openEditor,
+                borderRadius: BorderRadius.circular(25),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: Colors.white),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_rounded, size: 16, color: _primary),
+                      SizedBox(width: 7),
+                      Text(
+                        'Профайлаа засах',
+                        style: TextStyle(
+                          color: _primary,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -537,14 +607,14 @@ class _HeaderLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.white70),
+        Icon(icon, size: 14, color: Color(0xFF2E6472)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: const TextStyle(color: Color(0xFF2E6472), fontSize: 12),
           ),
         ),
       ],
@@ -561,7 +631,7 @@ class _HeaderStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .13),
+        color: Colors.white.withValues(alpha: .62),
         borderRadius: BorderRadius.circular(13),
       ),
       child: Row(
@@ -582,7 +652,7 @@ class _HeaderStat extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: Colors.white,
+                color: brandInk,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -865,4 +935,312 @@ class _MessageBox extends StatelessWidget {
       ),
     );
   }
+}
+
+
+// ================= ШИНЭ: ПРОФАЙЛ ЗАСАХ =================
+
+/// Нэр, утас, төрсөн огноог засах доороос гарах цонх.
+class ProfileEditSheet extends StatefulWidget {
+  const ProfileEditSheet({
+    super.key,
+    required this.api,
+    required this.name,
+    required this.phone,
+    required this.birthDate,
+  });
+
+  final AuthService api;
+  final String name;
+  final String phone;
+  final String birthDate;
+
+  @override
+  State<ProfileEditSheet> createState() => _ProfileEditSheetState();
+}
+
+class _ProfileEditSheetState extends State<ProfileEditSheet> {
+  late final _nameController = TextEditingController(text: widget.name);
+  late final _phoneController = TextEditingController(text: widget.phone);
+  late DateTime? _birth = _parse(widget.birthDate);
+
+  final _formKey = GlobalKey<FormState>();
+  bool _saving = false;
+  String? _error;
+
+  static DateTime? _parse(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  static String _format(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}'
+      '-${date.day.toString().padLeft(2, '0')}';
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birth ?? DateTime(now.year - 20, now.month, now.day),
+      firstDate: DateTime(1920),
+      lastDate: now,
+      helpText: 'Төрсөн огноогоо сонгоно уу',
+      cancelText: 'Болих',
+      confirmText: 'Сонгох',
+    );
+    if (picked != null && mounted) setState(() => _birth = picked);
+  }
+
+  Future<void> _save() async {
+    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    try {
+      final user = await widget.api.updateProfile(
+        name: _nameController.text,
+        phone: _phoneController.text,
+        birthDate: _birth == null ? '' : _format(_birth!),
+      );
+      if (mounted) Navigator.pop(context, user);
+    } on AuthException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Хадгалахад алдаа гарлаа. Дахин оролдоно уу.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: brandGradientSoft,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: SafeArea(
+          top: false,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: brandBorder,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const BrandTapIcon(
+                      icon: Icons.manage_accounts_rounded,
+                      seed: 'profile-edit',
+                      boxSize: 42,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Профайл засах',
+                        style: TextStyle(
+                          color: brandInk,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Хаах',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: brandInkSoft,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                _label('Нэр'),
+                TextFormField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  maxLength: 100,
+                  style: const TextStyle(color: brandInk),
+                  decoration: _decoration(
+                    'Таны нэр',
+                    Icons.person_outline_rounded,
+                  ),
+                  validator: (value) =>
+                      (value ?? '').trim().isEmpty ? 'Нэрээ оруулна уу.' : null,
+                ),
+                const SizedBox(height: 8),
+
+                _label('Утасны дугаар'),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 30,
+                  style: const TextStyle(color: brandInk),
+                  decoration: _decoration(
+                    'Жишээ: 99112233',
+                    Icons.phone_outlined,
+                  ),
+                  validator: (value) {
+                    final phone = (value ?? '').trim();
+                    if (phone.isEmpty) return null;
+                    final allowed = RegExp(r'^[0-9+\-() ]+$');
+                    return allowed.hasMatch(phone)
+                        ? null
+                        : 'Зөвхөн тоо болон + - ( ) ашиглана.';
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                _label('Төрсөн огноо'),
+                InkWell(
+                  onTap: _pickBirthDate,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: brandBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.cake_outlined,
+                          color: brandAquaDeep,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _birth == null
+                                ? 'Сонгоогүй байна'
+                                : _format(_birth!),
+                            style: TextStyle(
+                              color: _birth == null ? brandInkSoft : brandInk,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (_birth != null)
+                          IconButton(
+                            tooltip: 'Арилгах',
+                            onPressed: () => setState(() => _birth = null),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: brandInkSoft,
+                            ),
+                          ),
+                        const Icon(
+                          Icons.expand_more_rounded,
+                          color: brandInkSoft,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: brandDanger.withValues(alpha: .08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: brandDanger.withValues(alpha: .25),
+                      ),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: brandDanger,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 18),
+                BrandGradientButton(
+                  busy: _saving,
+                  onPressed: _saving ? null : _save,
+                  icon: const Icon(Icons.check_rounded),
+                  label: 'Хадгалах',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _label(String text) => Padding(
+    padding: const EdgeInsets.only(left: 4, bottom: 7),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: brandInk,
+        fontSize: 13,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+  );
+
+  InputDecoration _decoration(String hint, IconData icon) => InputDecoration(
+    hintText: hint,
+    counterText: '',
+    hintStyle: const TextStyle(color: brandInkSoft, fontSize: 13),
+    prefixIcon: Icon(icon, color: brandAquaDeep, size: 20),
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: brandBorder),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: brandBorder),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: brandAquaDeep, width: 1.6),
+    ),
+  );
 }

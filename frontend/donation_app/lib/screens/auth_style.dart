@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const Color authBlue = Color(0xFF7353BA);
-const Color authDarkBlue = Color(0xFF39275F);
-const Color authBackground = Color(0xFFF8F6FF);
-const Color authBorder = Color(0xFFE7E0F3);
+const Color authBlue = Color(0xFF0C92AC);
+const Color authDarkBlue = Color(0xFF0B4A57);
+const Color authBackground = Color(0xFFF3FCFE);
+const Color authBorder = Color(0xFFC3EBF3);

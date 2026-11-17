@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import 'auth_style.dart';
+import '../theme/app_theme.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({
@@ -73,10 +74,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: authBackground,
+    backgroundColor: Colors.transparent,
     appBar: AppBar(
-      backgroundColor: authBackground,
+      backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
+      flexibleSpace: const BrandAppBarBackground(),
       elevation: 0,
       centerTitle: true,
       leading: Padding(
@@ -95,7 +97,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       title: const Text(
         'Volunteer Hub',
         style: TextStyle(
-          color: authDarkBlue,
+          color: brandInk,
           fontWeight: FontWeight.w900,
           fontSize: 18,
         ),
@@ -148,7 +150,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 ? 'Имэйлд ирсэн код болон шинэ нууц үгээ оруулна уу.'
                                 : 'Бүртгэлтэй имэйл хаягаа оруулж сэргээх код авна уу.',
                             style: const TextStyle(
-                              color: Color(0xFF7C8EAA),
+                              color: Color(0xFF6E9AA4),
                               fontSize: 12,
                               height: 1.6,
                             ),
@@ -282,13 +284,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           Container(
                             height: 56,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF9B83D2),
-                                  authBlue,
-                                  Color(0xFF60429F),
-                                ],
-                              ),
+                              gradient: brandGradient,
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: [
                                 BoxShadow(
@@ -304,7 +300,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 backgroundColor: Colors.transparent,
                                 disabledBackgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
-                                foregroundColor: Colors.white,
+                                foregroundColor: brandInk,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -372,7 +368,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 const Text(
                   '💙 Сайн үйлсэд хамтдаа!',
                   style: TextStyle(
-                    color: Color(0xFF8295B2),
+                    color: Color(0xFF6E9AA4),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -392,7 +388,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFFF0EBFA), Color(0xFFF8F6FF), Color(0xFFFFF3D6)],
+        colors: [Color(0xFFD6F6FC), Color(0xFFF3FCFE), Color(0xFFFFF5D6)],
       ),
       borderRadius: BorderRadius.circular(29),
       border: Border.all(color: Colors.white, width: 2),
@@ -437,7 +433,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 11),
         const Text(
           'Бүртгэлээ сэргээгээд сайн үйлсийн аяллаа үргэлжлүүлээрэй.',
-          style: TextStyle(color: Color(0xFF647D9F), fontSize: 13, height: 1.7),
+          style: TextStyle(color: Color(0xFF4F7F8B), fontSize: 13, height: 1.7),
         ),
         const SizedBox(height: 18),
         Row(
@@ -501,7 +497,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     onPressed: _busy ? null : toggle,
     icon: Icon(
       hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-      color: const Color(0xFF8295B2),
+      color: const Color(0xFF6E9AA4),
     ),
   );
 
@@ -509,7 +505,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     margin: const EdgeInsets.only(top: 16),
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(
-      color: error ? const Color(0xFFFFF2F3) : const Color(0xFFF0F5FF),
+      color: error ? const Color(0xFFFFF2F3) : const Color(0xFFEAFAFD),
       borderRadius: BorderRadius.circular(15),
     ),
     child: Row(
@@ -537,10 +533,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   InputDecoration _decoration(String hint, IconData icon) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: Color(0xFF9AAAC2), fontSize: 12),
+    hintStyle: const TextStyle(color: Color(0xFF8FB6BE), fontSize: 12),
     prefixIcon: Icon(icon, color: authBlue, size: 21),
     filled: true,
-    fillColor: const Color(0xFFFAFCFF),
+    fillColor: const Color(0xFFF7FDFF),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(17),

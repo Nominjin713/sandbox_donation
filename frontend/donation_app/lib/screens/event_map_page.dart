@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../theme/app_theme.dart';
 
 class EventMapPage extends StatefulWidget {
   const EventMapPage({
@@ -31,8 +32,14 @@ class _EventMapPageState extends State<EventMapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6FF),
-      appBar: AppBar(title: const Text('Үйл ажиллагааны байршил')),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Үйл ажиллагааны байршил'),
+        backgroundColor: Colors.transparent,
+        foregroundColor: brandInk,
+        flexibleSpace: const BrandAppBarBackground(),
+        elevation: 0,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -60,7 +67,7 @@ class _EventMapPageState extends State<EventMapPage> {
                       height: 55,
                       child: const Icon(
                         Icons.location_pin,
-                        color: Color(0xFF7353BA),
+                        color: Color(0xFF0C92AC),
                         size: 48,
                       ),
                     ),
