@@ -237,7 +237,7 @@ def login_user(*, request, email, password):
         password=password,
     )
     if user is None:
-        return None
+        return None 
     if not user.email_verified:
         raise VerificationRequired
     return user, create_session(user)
