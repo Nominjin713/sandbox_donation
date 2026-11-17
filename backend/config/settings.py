@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-import os
+
 EMAIL_BACKEND = 'accounts.resend_backend.ResendEmailBackend'
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
@@ -46,8 +46,11 @@ email_config = json.loads(email_config_path.read_text(encoding='utf-8')) if emai
 def email_setting(name, default=''):
     return os.environ.get(name, email_config.get(name, default))
 
-
-EMAIL_BACKEND = email_setting('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_BACKEND = email_setting(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend' if DEBUG
+    else 'accounts.resend_backend.ResendEmailBackend',
+)
 EMAIL_HOST = email_setting('EMAIL_HOST', 'localhost')
 EMAIL_PORT = int(email_setting('EMAIL_PORT', '587'))
 EMAIL_HOST_USER = email_setting('EMAIL_HOST_USER')
@@ -60,4 +63,4 @@ RESEND_API_KEY = email_setting('RESEND_API_KEY')
 GMAIL_CLIENT_ID = email_setting('GMAIL_CLIENT_ID')
 GMAIL_CLIENT_SECRET = email_setting('GMAIL_CLIENT_SECRET')
 GMAIL_REFRESH_TOKEN = email_setting('GMAIL_REFRESH_TOKEN')
-DEFAULT_FROM_EMAIL = email_setting('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@example.com')
+DEFAULT_FROM_EMAIL = email_setting('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
