@@ -11,8 +11,23 @@ from .authentication import get_session as session
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.db import transaction
-from .services import EmailAlreadyRegistered, VerificationRequired, register_user, login_user, send_verification, verify_email
+from .services import (
+    EmailAlreadyRegistered,
+    EmailSendFailed,
+    VerificationCooldown,
+    VerificationRequired,
+    register_user,
+    login_user,
+    send_verification,
+    verify_email,
+)
 from .services import request_password_reset, reset_password
+
+logger = logging.getLogger(__name__)
+
+# Имэйл илгээхэд гарч болох бүх алдаа
+MAIL_ERRORS = (EmailSendFailed, SMTPException, OSError)
+MAIL_FAILED_MESSAGE = 'Имэйл илгээж чадсангүй. Түр хүлээгээд дахин оролдоно уу.'
 
 
 def error(message, status=400):
@@ -24,7 +39,6 @@ def user_data(user):
         'id': user.pk,
         'name': user.name,
         'email': user.email,
-        # ШИНЭ: профайл засахад хэрэгтэй талбарууд
         'phone': user.phone or '',
         'birth_date': user.birth_date.isoformat() if user.birth_date else '',
     }
@@ -83,9 +97,9 @@ def forgot_password(request):
         return error('Зөв имэйл оруулна уу.')
     try:
         request_password_reset(email.strip().lower())
-    except (SMTPException, OSError):
-        logging.getLogger(__name__).exception('Password reset email delivery failed')
-        return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
+    except MAIL_ERRORS:
+        logger.exception('Password reset email delivery failed')
+        return error(MAIL_FAILED_MESSAGE, 503)
     return JsonResponse({'message': 'Бүртгэлтэй имэйл бол сэргээх код илгээгдэнэ. Имэйлээ шалгана уу.'})
 
 
@@ -117,14 +131,19 @@ def register(request):
         return error('Нэрээ оруулна уу (100 хүртэл тэмдэгт).')
     try:
         register_user(name=name, email=email, password=password)
-    except (SMTPException, OSError):
-        logging.getLogger(__name__).exception('Verification email delivery failed')
-        return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
-    except ValidationError as exc:
-        return error(' '.join(exc.messages))
     except EmailAlreadyRegistered:
         return error('Энэ имэйл бүртгэлтэй байна.', 409)
-    return JsonResponse({'verification_required': True, 'message': 'Имэйлд ирсэн 6 оронтой кодыг оруулна уу.'}, status=201)
+    except VerificationCooldown as exc:
+        return error(str(exc), 429)
+    except ValidationError as exc:
+        return error(' '.join(exc.messages))
+    except MAIL_ERRORS:
+        logger.exception('Verification email delivery failed')
+        return error(MAIL_FAILED_MESSAGE, 503)
+    return JsonResponse(
+        {'verification_required': True, 'message': 'Имэйлд ирсэн 6 оронтой кодыг оруулна уу.'},
+        status=201,
+    )
 
 
 @endpoint('POST', limited=True)
@@ -182,19 +201,21 @@ def resend_verification(request):
         return error(str(exc))
     try:
         with transaction.atomic():
-            user = User.objects.select_for_update().filter(email__iexact=email, is_active=True, email_verified=False).first()
+            user = User.objects.select_for_update().filter(
+                email__iexact=email, is_active=True, email_verified=False
+            ).first()
             if not user or not user.check_password(password):
                 return error('Имэйл эсвэл нууц үг буруу байна.', 401)
             send_verification(user)
-    except ValueError as exc:
+    except VerificationCooldown as exc:
         return error(str(exc), 429)
-    except (SMTPException, OSError):
-        logging.getLogger(__name__).exception('Verification email delivery failed')
-        return error('Имэйл илгээж чадсангүй. Дахин оролдоно уу.', 503)
+    except MAIL_ERRORS:
+        logger.exception('Verification email delivery failed')
+        return error(MAIL_FAILED_MESSAGE, 503)
     return JsonResponse({'message': 'Шинэ код илгээлээ.'})
 
 
-# ШИНЭ: хэрэглэгч өөрийн профайлаа засах
+# Хэрэглэгч өөрийн профайлаа засах
 PROFILE_FIELDS = ('name', 'phone', 'birth_date')
 
 
@@ -212,9 +233,13 @@ def update_profile(request):
 
     unknown = set(body) - set(PROFILE_FIELDS)
     if unknown:
-        return JsonResponse({'message': 'Танигдахгүй талбар байна.',
-                             'errors': {field: ['Танигдахгүй талбар.'] for field in sorted(unknown)}},
-                            status=400)
+        return JsonResponse(
+            {
+                'message': 'Танигдахгүй талбар байна.',
+                'errors': {field: ['Танигдахгүй талбар.'] for field in sorted(unknown)},
+            },
+            status=400,
+        )
 
     user = token.user
     errors = {}
