@@ -11,7 +11,9 @@ from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
-
+import json
+import os
+import urllib.request
 from .models import AuthToken, User
 
 logger = logging.getLogger(__name__)
@@ -41,19 +43,43 @@ def _new_code():
     return f'{secrets.randbelow(1000000):06d}'
 
 
+def _send_via_brevo(subject, message, to_email):
+    payload = json.dumps({
+        'sender': {'name': 'Donation', 'email': os.environ['MAIL_SENDER_EMAIL']},
+        'to': [{'email': to_email}],
+        'subject': subject,
+        'textContent': message,
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        'https://api.brevo.com/v3/smtp/email',
+        data=payload,
+        headers={
+            'api-key': os.environ['BREVO_API_KEY'],
+            'content-type': 'application/json',
+            'accept': 'application/json',
+            'user-agent': 'donation-backend',
+        },
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        resp.read()
+
+
 def _safe_send_mail(subject, message, to_email):
     try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [to_email],
-            fail_silently=False,
-        )
+        if os.environ.get('BREVO_API_KEY'):
+            _send_via_brevo(subject, message, to_email)
+        else:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [to_email],
+                fail_silently=False,
+            )
     except Exception as exc:
         logger.exception('Email send failed')
         raise EmailSendFailed from exc
-
 
 # ---------------------------------------------------------------- verification
 
